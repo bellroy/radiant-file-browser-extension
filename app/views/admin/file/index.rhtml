@@ -1,0 +1,28 @@
+<% include_javascript 'sitemap' -%>
+
+<h1>Assets</h1>
+
+<table id="filelist" class="index" summary="List of Files">
+  <thead>
+    <tr>
+      <th class="page">File</th>
+      <th class="type">Type</th>
+      <th class="size">Size</th>
+      <th class="embed">Embed</th>
+      <!-- <th class="modify" colspan="2">Modify</th> -->
+    </tr>
+  </thead>
+  <tbody>
+<% if @assets -%>
+<%= print_children(@assets) -%>
+<% else -%>
+  <tr>
+    <td colspan="6" class="note">No Files</td>
+  </tr>
+<% end -%>
+  </tbody>
+</table>
+
+<p>
+  <%= link_to 'New Asset', new_file_path %>
+</p>

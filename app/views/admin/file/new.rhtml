@@ -1,0 +1,20 @@
+<h1>New Asset</h1>
+
+<form method="post" enctype="multipart/form-data" action="">
+  <table class="fieldset">
+    <tbody>
+      <tr>
+        <td class="label"><label for="asset_uploaded_data">File</label></td>
+        <td class="field">
+          <input type="file" name="asset[uploaded_data]" id="asset_uploaded_data" />
+        </td>
+        <td class="help">Required.</td>
+      </tr>
+    </tbody>
+  </table>  
+  <p class="buttons">
+    <input type="submit" value="Upload File" />
+    or <%= link_to "Cancel", files_path %>
+  </p>
+
+</form>
