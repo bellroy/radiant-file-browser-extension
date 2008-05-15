@@ -1,12 +1,14 @@
 <h1>New Asset</h1>
 
 <form method="post" enctype="multipart/form-data" action="">
+  <input type="hidden" name="new_type" value="UPLOAD" />
   <table class="fieldset">
     <tbody>
       <tr>
         <td class="label"><label for="asset_uploaded_data">File</label></td>
         <td class="field">
           <input type="file" name="asset[uploaded_data]" id="asset_uploaded_data" />
+		  <input type="hidden" name="asset[parent_id]" id="asset_parent_id" value='<%=@parent_id-%>'/>
         </td>
         <td class="help">Required.</td>
       </tr>
@@ -16,5 +18,26 @@
     <input type="submit" value="Upload File" />
     or <%= link_to "Cancel", files_path %>
   </p>
-
 </form>
+<p>
+	OR
+</p>
+<form method="post" action="">  
+  <input type="hidden" name="new_type" value="CREATE" />
+  <table class="fieldset">
+    <tbody>
+      <tr>
+        <td class="label"><label for="asset_uploaded_data">Directory</label></td>
+        <td class="field">
+          <input type="text" name="asset[directory_name]" id="asset_directory_name" />
+		  <input type="hidden" name="asset[parent_id]" id="asset_parent_id" value='<%=@parent_id-%>'/>
+        </td>
+        <td class="help">Required.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="buttons">
+    <input type="submit" value="Create Directory" />
+    or <%= link_to "Cancel", files_path %>
+  </p>
+</form>  
