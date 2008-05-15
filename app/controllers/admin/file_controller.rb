@@ -31,20 +31,30 @@ class Admin::FileController < ApplicationController
   end
   
   def children
-    @id = params[:id]
-    @assets = Pathname.new(FileBrowserExtension.asset_path)   
-    @indent_level = params[:indent_level]
-    @asset_list = params[:asset_list]
-    render :layout => false
+    if request.xhr?
+      @id = params[:id]
+      @assets = Pathname.new(FileBrowserExtension.asset_path)   
+      @indent_level = params[:indent_level]
+      @asset_list = params[:asset_list]
+      render :layout => false
+    end
   end
   
   def remove
-    id = params[:id].to_i
-    asset_absolute_path = Pathname.new(FileBrowserExtension.asset_path)
-    asset_array = get_directory_array(asset_absolute_path)
-    @file = Pathname.new(asset_absolute_path + asset_array[id])
+    id = params[:id]
+    redirect_to :action => 'index' if id.nil? or id == ''
+    @path = id2path(id)
     if request.post?
-      
+      file_dir = '' 
+      if @path.directory?
+        file_dir = 'directory'         
+        @path.rmdir
+      elsif @path.file?
+        file_dir = 'file'         
+        @path.delete
+      end
+      flash[:notice] = "The "+file_dir+" was successfully removed from the assets."
+      redirect_to :action => 'index'
     end
   end
 end
