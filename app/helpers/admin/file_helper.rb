@@ -4,19 +4,15 @@ module Admin::FileHelper
   
   def print_path(path, indent_level=0)
     output = ''    
-    asset_array = get_directory_array(@asset_absolute_path)
-    relative_path = path.relative_path_from(@asset_absolute_path)
-    file_id = asset_array.index(relative_path)
     if path.directory?
-      output << print_dir_node(path, indent_level, file_id)
-      # output << print_children(path, indent_level)
+      output << print_dir_node(path, indent_level)
     else
-      output << print_file_node(path, indent_level, file_id)
+      output << print_file_node(path, indent_level)
     end
     output
   end
   
-  def render_children(path, id='', indent_level=0)
+  def render_children(path, id='', indent_level=0, show_parent_dir=false)
     if path.directory?
       @asset_absolute_path = path    
       asset_array = get_directory_array(path)
@@ -24,16 +20,19 @@ module Admin::FileHelper
         path = path + asset_array[id.to_i].to_s
         path = Pathname.new(path)
       end
-      print_children(path, indent_level.to_i)
+      print_children(path, indent_level.to_i, show_parent_dir)
     else
       print_file_node(path) 
     end
   end
   
-  def print_children(path, indent_level=0)       
+  def print_children(path, indent_level=0, show_parent_dir=false)  
+    output = ''    
+    output << print_dir_node(path, 0, true) if show_parent_dir == true 
     path.children.collect do |child|
-      print_path(child, indent_level+1) unless hidden?(child)
-    end.to_s
+      output << print_path(child, indent_level+1) unless hidden?(child)
+    end
+    output
   end
   
   def asset_json(path)
@@ -42,13 +41,14 @@ module Admin::FileHelper
   end
   
   private
-    def print_dir_node(file, indent_level=0, file_id=0)
+    def print_dir_node(file, indent_level=0, dont_expand=false)
+      file_id = path2id(file)
       html_class = "node level-#{indent_level} children-hidden"
       %Q{
       <tr class="#{html_class}" id = "page-#{file_id}" >
         <td class="directory" style="padding-left: #{padding_left(indent_level)}px">
           <span class="w1">
-          #{expander}         
+          #{expander dont_expand}         
           #{icon_for(file)}
           <span class="title">#{file.basename.to_s}</span>
           #{spinner(file_id)}          
@@ -62,7 +62,8 @@ module Admin::FileHelper
       </tr>}
     end
     
-    def print_file_node(file, indent_level=0, file_id=0)
+    def print_file_node(file, indent_level=0)
+      file_id = path2id(file)      
       html_class = "node level-#{indent_level} no-children"
       %Q{
       <tr class="#{html_class}" id = "page-#{file_id}">
@@ -127,8 +128,8 @@ module Admin::FileHelper
     # end    
     
     #added by Sanath
-    def expander
-      image("expand", 
+    def expander(dont_expand)
+      image(dont_expand ? "collapse" : "expand", 
             :class => "expander", :alt => 'toggle children', 
             :title => '')      
     end    

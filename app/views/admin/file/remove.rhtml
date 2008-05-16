@@ -1,15 +1,44 @@
+<% include_javascript 'admin/sitemap' -%>
+
 <% files = '' -%>
-<% files = pluralize(@file.entries.length, 'entry') if @file.directory? -%>
+<% files = pluralize(@path.entries.length, 'entry') if @path.directory? -%>
 
 <h1 id="remove_article">Remove <%= files %></h1>
 <p>Are you sure you want to <strong class="warning">permanently remove</strong> the following <%= files.downcase %>?</p>
 
 <table id="site-map" class="index" cellpadding="0" cellspacing="0" border="0">
   <tbody>
-      <%= render_children @file -%>
+      <%= render_children @path, '', 0, true -%>
   </tbody>
 </table>
 
 <form method="post" action="">
   <p class="buttons"><%= submit_tag "Delete #{files}", :class => 'button' %> or <%= link_to 'Cancel', '/admin/files/' %></p>
 </form>
+
+<script>
+	
+var asset_list = '<%= asset_json(@assets) -%>';	
+	
+//over-riding the sitemap.js -> getBranch method	
+SiteMap.addMethods ({
+	getBranch: function(row) {
+	
+	    var id = this.extractPageId(row), level = this.extractLevel(row),
+	        spinner = $('busy-' + id);
+
+		new Ajax.Updater(
+	      row,
+	      '../files/children?indent_level=' + level,
+	      {
+			method: "post",		  	
+		  	parameters: { id: id, asset_list: asset_list },	
+	        insertion: "after",
+	        onLoading:  function() { spinner.show(); this.updating = true  }.bind(this),
+	        onComplete: function() { spinner.fade(); this.updating = false }.bind(this)
+	      }
+	    );
+	  }	
+});	
+
+</script>

@@ -43,6 +43,7 @@ class Admin::FileController < ApplicationController
   def remove
     id = params[:id]
     redirect_to :action => 'index' if id.nil? or id == ''
+    @assets = Pathname.new(FileBrowserExtension.asset_path) 
     @path = id2path(id)
     if request.post?
       file_dir = '' 

@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
-include DirectoryArray
 
 describe Admin::FileController do
   scenario :users

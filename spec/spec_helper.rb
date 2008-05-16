@@ -18,6 +18,9 @@ if File.directory?(File.dirname(__FILE__) + "/matchers")
   Dir[File.dirname(__FILE__) + "/matchers/*.rb"].each {|file| require file }
 end
 
+include ApplicationHelper
+include DirectoryArray
+
 Spec::Runner.configure do |config|
   # config.use_transactional_fixtures = true
   # config.use_instantiated_fixtures  = false
