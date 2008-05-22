@@ -72,6 +72,7 @@ describe Admin::FileHelper do
     test_file = File.join(@asset_absolute_path, 'testfile.jpg') 
     Pathname.new(test_dir).rmdir
     Pathname.new(test_file).delete    
+
   end
   
 end
