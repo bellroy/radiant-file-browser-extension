@@ -3,7 +3,6 @@ class Admin::FileController < ApplicationController
   
   def index
     @assets = Pathname.new(FileBrowserExtension.asset_path)
-    AssetLock.create(:version => '0') 
   end
   
   def new
@@ -56,7 +55,7 @@ class Admin::FileController < ApplicationController
     redirect_to :action => 'index' if id.nil? or id == ''
     @assets = Pathname.new(FileBrowserExtension.asset_path) 
     @path = id2path(id)
-    @asset_lock = AssetLock.find(1)
+    @asset_lock = AssetLock.get_version
     if request.post?
       asset_version = params[:version]      
       if confirm_version(asset_version)
@@ -69,11 +68,10 @@ class Admin::FileController < ApplicationController
             @path.delete
           end
           flash[:notice] = "The "+file_dir+" was successfully removed from the assets."
-          AssetLock.increment_counter(:version, 1)
+          AssetLock.increment_counter(:version, 1)          
           redirect_to :action => 'index'
       else
-          flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted."
-          redirect_to :action => 'index'          
+          flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted."        
       end  
     end
   end
@@ -88,7 +86,8 @@ class Admin::FileController < ApplicationController
           if path.file?
             if !file_path.file?
                 path.rename(file_path)
-                AssetLock.increment_counter(:version, 1)                      
+                AssetLock.increment_counter(:version, 1)   
+                flash[:notice] = "Filename has been sucessfully edited."
             else
                 flash[:error] = "Filename already exists."  
             end
@@ -96,17 +95,20 @@ class Admin::FileController < ApplicationController
             if !file_path.directory?
                 path.rename(file_path)
                 AssetLock.increment_counter(:version, 1)  
+                flash[:notice] = "Directory has been sucessfully edited."
             else
                 flash[:error] = "Directory already exists."              
             end
           end
+          redirect_to :action => 'index'                 
       else
-          flash[:error] = "The assets have been modified since it was last loaded hence could not be edited."
+          flash[:error] = "The assets have been modified since it was last loaded hence could not be edited."          
+          @file_name = id2path(id).basename
+          @asset_lock = AssetLock.get_version          
       end
-      redirect_to :action => 'index'               
     else
       @file_name = id2path(id).basename
-      @asset_lock = AssetLock.find(1)
+      @asset_lock = AssetLock.get_version
     end
   end
   
@@ -117,7 +119,7 @@ class Admin::FileController < ApplicationController
   private
   
   def confirm_version(version)
-    current_version = AssetLock.find(1).version
+    current_version = AssetLock.get_version.version
     if version.to_i == current_version.to_i
       return true
     else

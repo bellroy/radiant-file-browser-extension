@@ -1,0 +1,14 @@
+<h1 id="edit_page">Edit File/Directory Name</h1>
+  <div class="form-area">
+  	<form method="post" action="" >
+	    <p class="title">
+	      <label for="page_title">File/Directory Name</label>	  
+		  <input type='hidden' name='version' value='<%= @asset_lock.version %>' />	
+	      <%= text_field_tag "file_name", @file_name,:class => 'textbox', :maxlength => 255 %>
+	    </p>
+		<br />
+		<p class="buttons">
+		  <%= submit_tag "Save changes", :class => 'button' %> or <%= link_to "Cancel", files_path %>
+		</p>	
+	</form>
+  </div>	

@@ -22,7 +22,7 @@ module Admin::FileHelper
       end
       print_children(path, indent_level.to_i, show_parent_dir, simple)
     else
-      print_file_node(path, simple) 
+      print_file_node(path, 0, simple) 
     end
   end
   
