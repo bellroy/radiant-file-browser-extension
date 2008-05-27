@@ -29,7 +29,7 @@
 
 <script>
 	
-var asset_list = '<%= asset_json(@assets) -%>';	
+var asset_list = '<%= asset_to_array(@assets) -%>';	
 	
 //over-riding the sitemap.js -> getBranch method	
 SiteMap.addMethods ({

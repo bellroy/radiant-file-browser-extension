@@ -2,17 +2,17 @@ module Admin::FileHelper
   include Admin::NodeHelper
   include DirectoryArray
   
-  def print_path(path, indent_level=0)
+  def print_path(path, indent_level=0, simple=false)
     output = ''    
     if path.directory?
-      output << print_dir_node(path, indent_level)
+      output << print_dir_node(path, indent_level, false, simple)
     else
-      output << print_file_node(path, indent_level)
+      output << print_file_node(path, indent_level, simple)
     end
     output
   end
   
-  def render_children(path, id='', indent_level=0, show_parent_dir=false)
+  def render_children(path, id='', indent_level=0, show_parent_dir=false, simple=false)
     if path.directory?
       @asset_absolute_path = path    
       asset_array = get_directory_array(path)
@@ -20,28 +20,34 @@ module Admin::FileHelper
         path = path + asset_array[id.to_i].to_s
         path = Pathname.new(path)
       end
-      print_children(path, indent_level.to_i, show_parent_dir)
+      print_children(path, indent_level.to_i, show_parent_dir, simple)
     else
-      print_file_node(path) 
+      print_file_node(path, simple) 
     end
   end
   
-  def print_children(path, indent_level=0, show_parent_dir=false)  
+  def print_children(path, indent_level=0, show_parent_dir=false, simple=false)  
     output = ''    
-    output << print_dir_node(path, 0, true) if show_parent_dir == true 
+    output << print_dir_node(path, 0, true, simple) if show_parent_dir == true 
     path.children.collect do |child|
-      output << print_path(child, indent_level+1) unless hidden?(child)
+      output << print_path(child, indent_level+1, simple) unless hidden?(child)
     end
     output
   end
   
-  def asset_json(path)
+  def asset_to_array(path)
     asset_array = get_directory_array(path)
-    asset_array.to_json
+    output = '['
+    asset_array.each do |a|
+      output << '"' + a + '"'
+      output << ","      
+    end
+    output.chomp!(',')
+    output << ']'
   end
   
   private
-    def print_dir_node(file, indent_level=0, dont_expand=false)
+    def print_dir_node(file, indent_level=0, dont_expand=false, simple=false)
       file_id = path2id(file)
       html_class = "node level-#{indent_level} children-hidden"
       %Q{
@@ -50,33 +56,45 @@ module Admin::FileHelper
           <span class="w1">
           #{expander dont_expand}         
           #{icon_for(file)}
-          <span class="title">#{file.basename.to_s}</span>
+          <span class="title"><a href='/admin/files/edit?id=#{file_id}'>#{file.basename.to_s}</a></span>
           #{spinner(file_id)}          
           </span>
         </td>
         <td class="type">Folder</td>
-        <td class="size"></td>
-        <td class="embed"></td>
-        <td class="add-child">#{link_to_new_file(file_id)}</td>
-        <td class="remove">#{link_to_remove_file(file_id)}</td> 
-      </tr>}
+       } + 
+        if !simple 
+          %Q{ 
+          <td class="size"></td>
+          <td class="embed"></td>
+          <td class="add-child">#{link_to_new_file(file_id)}</td>
+          <td class="remove">#{link_to_remove_file(file_id)}</td> 
+          </tr>} 
+        else
+          ''
+        end
     end
     
-    def print_file_node(file, indent_level=0)
+    def print_file_node(file, indent_level=0, simple=false)
       file_id = path2id(file)      
       html_class = "node level-#{indent_level} no-children"
       %Q{
       <tr class="#{html_class}" id = "page-#{file_id}">
         <td class="file" style="padding-left: #{padding_left(indent_level)}px">
           #{icon_for(file)}
-          <span class="title">#{file.basename.to_s}</span>
+          <span class="title"><a href='/admin/files/edit?id=#{file_id}'>#{file.basename.to_s}</a></span>
         </td>
         <td class="type">#{type_description_for(file)}</td>
-        <td class="size">#{number_to_human_size(file.size)}</td>
-        <td class="embed">#{link_or_embed_field_for(file)}</td>
-        <td class="add-child"></td>
-        <td class="remove">#{link_to_remove_file(file_id)}</td>        
-      </tr>}
+        } + 
+        if !simple 
+          %Q{           
+          <td class="size">#{number_to_human_size(file.size)}</td>
+          <td class="embed">#{link_or_embed_field_for(file)}</td>
+          <td class="add-child"></td>
+          <td class="remove">#{link_to_remove_file(file_id)}</td>        
+          </tr>}
+        else
+          ''
+        end
     end
             
     def icon_for(path)
