@@ -1,12 +1,15 @@
 class AssetLock < ActiveRecord::Base
-  def self.get_version
-    version = self.find_by_id(1)
-    if !version.nil?
-      return version
-    else
-      version = self.new(:version => 0)     
-      version.save
-      return version
-    end
+  def self.lock_version
+    version.version
+  end
+
+  def self.new_lock_version
+    version = self.version
+    version.update_attribute(:version, version.version + 1)
+    version.version
+  end
+
+  def self.version
+    version = find(:first) || create(:version => 0)
   end
 end
