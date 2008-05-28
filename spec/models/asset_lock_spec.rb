@@ -8,12 +8,12 @@ describe AssetLock do
   it "should not change lock_version when asked multiple times" do
     lock_version = AssetLock.lock_version
 
-    AssetLock.lock_version.should be_greater_than(lock_version)
+    AssetLock.lock_version.should == lock_version
   end
 
   it "should give a new_lock_version" do
     lock_version = AssetLock.lock_version
 
-    AssetLock.new_lock_version.should be_greater_than(lock_version)
+    AssetLock.new_lock_version.should > lock_version
   end
 end
