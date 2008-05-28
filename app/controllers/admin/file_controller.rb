@@ -45,7 +45,6 @@ class Admin::FileController < ApplicationController
       @id = params[:id]
       @assets = Pathname.new(FileBrowserExtension.asset_path)   
       @indent_level = params[:indent_level]
-      @asset_list = params[:asset_list]
       render :layout => false
     end
   end
@@ -110,11 +109,7 @@ class Admin::FileController < ApplicationController
       @file_name = id2path(id).basename
       @asset_lock = AssetLock.lock_version
     end
-  end
-  
-  def an_error
-    
-  end
+  end  
   
   private
   

@@ -74,7 +74,7 @@ describe Admin::FileController do
     response.should redirect_to(files_path)
   end
   
-###############
+  #####
 
   it "should display confirmation page when clicked on remove for a file" do
     test_file = File.join(FileBrowserExtension.asset_path, @renamed_test_upload_file)
@@ -91,32 +91,170 @@ describe Admin::FileController do
 
   it "should remove the directory when confirmed" do
     test_dir = File.join(FileBrowserExtension.asset_path, @renamed_test_dir)
-    post :remove, :id => path2id(test_dir)    
+    version  = AssetLock.lock_version
+    post :remove, :id => path2id(test_dir), :version => version    
     response.should redirect_to(files_path)    
+    Pathname.new(test_dir).should_not be_exist
   end
 
   it "should remove the file when confirmed" do
     test_file = File.join(FileBrowserExtension.asset_path, @renamed_test_upload_file)
-    post :remove, :id => path2id(test_file)
+    version  = AssetLock.lock_version
+    post :remove, :id => path2id(test_file), :version => version 
     response.should redirect_to(files_path)    
+    Pathname.new(test_file).should_not be_exist
   end    
   
-#################
+  ####
 
   it "should not allow directory to be edited if a new directory is added" do
     post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir}    
     initial_version = AssetLock.lock_version
     test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
-    get :edit, :id => path2id(test_dir)
     post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @second_test_dir}    
-    second_version = AssetLock.lock_version
-    puts "VERSIONS:"+initial_version.to_s+"-"+second_version.to_s
-    post :edit, :id => path2id(test_dir), :version => initial_version, :file_name => @renamed_test_dir
-    puts flash[:notice].to_s    
+    post :edit, :id => path2id(test_dir), :version => initial_version, :file_name => @renamed_test_dir   
     flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be edited."
     response.should be_success
-    Pathname.new(File.join(FileBrowserExtension.asset_path, @renamed_test_dir)).rmdir
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir
     Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_dir)).rmdir    
+  end
+
+  it "should not allow filename to be edited if a new file is added" do
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@test_upload_file, "image/jpg")}
+    initial_version = AssetLock.lock_version
+    test_file = File.join(FileBrowserExtension.asset_path, @test_upload_file)    
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@second_test_upload_file, "image/jpg")}
+    post :edit, :id => path2id(test_file), :version => initial_version, :file_name => @renamed_test_upload_file
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be edited."
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_upload_file)).delete
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_upload_file)).delete     
+  end
+
+  it "should not allow directory to be edited if a directory has been removed" do
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir}
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @second_test_dir} 
+    initial_version = AssetLock.lock_version
+    test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
+    second_test_dir = File.join(FileBrowserExtension.asset_path, @second_test_dir)    
+    post :remove, :id => path2id(second_test_dir), :version => initial_version 
+    post :edit, :id => path2id(test_dir), :version => initial_version, :file_name => @renamed_test_dir   
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be edited."
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir        
+  end
+
+  it "should not allow filename to be edited if a file has been removed" do
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@test_upload_file, "image/jpg")}
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@second_test_upload_file, "image/jpg")}
+    initial_version = AssetLock.lock_version
+    test_file = File.join(FileBrowserExtension.asset_path, @test_upload_file)    
+    second_test_file = File.join(FileBrowserExtension.asset_path, @second_test_upload_file)    
+    post :remove, :id => path2id(second_test_file), :version => initial_version 
+    post :edit, :id => path2id(test_file), :version => initial_version, :file_name => @renamed_test_upload_file  
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be edited."
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_upload_file)).delete
+  end
+
+  ####
+
+  it "should not allow directory to be deleted if a new directory is added" do
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir}    
+    initial_version = AssetLock.lock_version
+    test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @second_test_dir}    
+    post :remove, :id => path2id(test_dir), :version => initial_version
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be deleted."
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_dir)).rmdir  
+  end
+
+  it "should not allow file to be deleted if a new file is added" do
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@test_upload_file, "image/jpg")}   
+    initial_version = AssetLock.lock_version
+    test_file = File.join(FileBrowserExtension.asset_path, @test_upload_file)    
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@second_test_upload_file, "image/jpg")}
+    post :remove, :id => path2id(test_file), :version => initial_version
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be deleted."
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_upload_file)).delete
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_upload_file)).delete
+  end
+
+  it "should not allow directory to be deleted if another directory has been deleted" do
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir}    
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @second_test_dir}
+    initial_version = AssetLock.lock_version
+    test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
+    second_test_dir = File.join(FileBrowserExtension.asset_path, @second_test_dir)  
+    post :remove, :id => path2id(test_dir), :version => initial_version 
+    post :remove, :id => path2id(second_test_dir), :version => initial_version 
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be deleted."
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_dir)).rmdir
+  end
+
+  it "should not allow file to be deleted if another file has been deleted" do
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@test_upload_file, "image/jpg")}
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@second_test_upload_file, "image/jpg")}
+    initial_version = AssetLock.lock_version
+    test_file = File.join(FileBrowserExtension.asset_path, @test_upload_file)     
+    second_test_file = File.join(FileBrowserExtension.asset_path, @second_test_upload_file)    
+    post :remove, :id => path2id(test_file), :version => initial_version
+    post :remove, :id => path2id(second_test_file), :version => initial_version   
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be deleted."
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_upload_file)).delete
+  end
+
+  ####
+
+  it "should render children via AJAX" do
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir} 
+    test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
+    xml_http_request :post, :children, :id => path2id(test_dir), :level => '1'    
+    response.should be_success
+    response.body.should_not have_text('<head>')
+    response.content_type.should == 'text/html'
+    response.charset.should == 'utf-8'
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir
+  end
+
+  it "should show new asset page when Add Child is clicked" do
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir} 
+    test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
+    parent_id = path2id(test_dir)
+    get :new, :parent_id => parent_id
+    response.should be_success
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir
+  end
+
+  it "should create a child directory within another directory" do
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir} 
+    test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
+    parent_id = path2id(test_dir)
+    post :new, :parent_id => parent_id, :new_type => 'CREATE', :asset => {:directory_name => @second_test_dir} 
+    response.should redirect_to(files_path)
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir, @second_test_dir)).rmdir
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir
+   end
+
+  it "should not create a directory if the directory aleady exists" do
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir} 
+    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir} 
+    flash[:error].to_s.should == "Directory already exists."
+    response.should redirect_to(files_path)
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir
+  end
+
+  it "should not create a file if file already exists" do
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@test_upload_file, "image/jpg")}
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@test_upload_file, "image/jpg")}
+    flash[:error].to_s.should == "Filename already exists."
+    response.should redirect_to(files_path)
+    Pathname.new(File.join(FileBrowserExtension.asset_path, @test_upload_file)).delete
   end
 
 end
