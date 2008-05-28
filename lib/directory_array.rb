@@ -26,4 +26,11 @@ module DirectoryArray
       asset_absolute_path + asset_array[id.to_i]
     end
   
+    def path2id(path)
+      asset_absolute_path = Pathname.new(FileBrowserExtension.asset_path.to_s)         
+      asset_array = get_directory_array(asset_absolute_path)     
+      relative_path = Pathname.new(path).relative_path_from(asset_absolute_path)
+      asset_array.index(relative_path)
+    end
+  
 end
