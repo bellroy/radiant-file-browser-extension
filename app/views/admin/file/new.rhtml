@@ -1,6 +1,6 @@
 <h1>New Asset</h1>
 
-<form method="post" enctype="multipart/form-data" action="">
+<% form_tag "", :multipart => true do %>
   <input type="hidden" name="new_type" value="UPLOAD" />
   <table class="fieldset">
     <tbody>
@@ -18,11 +18,11 @@
     <input type="submit" value="Upload File" />
     or <%= link_to "Cancel", files_path %>
   </p>
-</form>
+<% end %>
 <p>
 	OR
 </p>
-<form method="post" action="">  
+<% form_tag "" do %>  
   <input type="hidden" name="new_type" value="CREATE" />
   <table class="fieldset">
     <tbody>
@@ -40,4 +40,4 @@
     <input type="submit" value="Create Directory" />
     or <%= link_to "Cancel", files_path %>
   </p>
-</form>  
+<% end %>  

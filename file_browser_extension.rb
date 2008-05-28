@@ -15,6 +15,7 @@ class FileBrowserExtension < Radiant::Extension
       admin.files     'admin/files',                 :action => 'index'
       admin.new_file  'admin/files/new',             :action => 'new'
       admin.child_files  'admin/files/children',     :action => 'children'
+      admin.edit_files   'admin/files/edit',         :action => 'edit'
       admin.remove_file  'admin/files/remove',       :action => 'remove'      
     end
     

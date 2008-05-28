@@ -12,4 +12,5 @@ class AssetLock < ActiveRecord::Base
   def self.version
     version = find(:first) || create(:version => 0)
   end
+
 end

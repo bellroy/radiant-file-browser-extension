@@ -36,7 +36,7 @@ describe Admin::FileController do
   end
   
   it "should create upload files" do
-    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload("../../vendor/extensions/file_browser/spec/fixtures/" + @test_upload_file, "image/jpg")}
+    post :new, :parent_id => nil, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(@test_upload_file, "image/jpg")}
     response.should redirect_to(files_path) 
   end  
   
@@ -60,7 +60,7 @@ describe Admin::FileController do
 
   it "should rename the directory" do
     test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
-    version  = AssetLock.get_version.version
+    version  = AssetLock.lock_version
     post :edit, :id => path2id(test_dir), :version => version, :file_name => @renamed_test_dir 
     flash[:notice].to_s.should == "Directory has been sucessfully edited." 
     response.should redirect_to(files_path) 
@@ -68,7 +68,7 @@ describe Admin::FileController do
 
   it "should rename the file" do
     test_file = File.join(FileBrowserExtension.asset_path, @test_upload_file)    
-    version  = AssetLock.get_version.version
+    version  = AssetLock.lock_version
     post :edit, :id => path2id(test_file), :version => version, :file_name => @renamed_test_upload_file
     flash[:notice].to_s.should == "Filename has been sucessfully edited." 
     response.should redirect_to(files_path)
@@ -105,15 +105,15 @@ describe Admin::FileController do
 
   it "should not allow directory to be edited if a new directory is added" do
     post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir}    
-    initial_version = AssetLock.get_version.version
+    initial_version = AssetLock.lock_version
     test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
     get :edit, :id => path2id(test_dir)
     post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @second_test_dir}    
-    second_version = AssetLock.get_version.version
+    second_version = AssetLock.lock_version
     puts "VERSIONS:"+initial_version.to_s+"-"+second_version.to_s
     post :edit, :id => path2id(test_dir), :version => initial_version, :file_name => @renamed_test_dir
     puts flash[:notice].to_s    
-    flash[:notice].to_s.should == "The assets have been modified since it was last loaded hence could not be edited."
+    flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be edited."
     response.should be_success
     Pathname.new(File.join(FileBrowserExtension.asset_path, @renamed_test_dir)).rmdir
     Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_dir)).rmdir    
