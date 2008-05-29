@@ -2,6 +2,7 @@
 
 <% form_tag "", :multipart => true do %>
   <input type="hidden" name="new_type" value="UPLOAD" />
+  <input type='hidden' name='version' value='<%= @asset_lock %>' />
   <table class="fieldset">
     <tbody>
       <tr>
@@ -24,6 +25,7 @@
 </p>
 <% form_tag "" do %>  
   <input type="hidden" name="new_type" value="CREATE" />
+  <input type='hidden' name='version' value='<%= @asset_lock %>' />
   <table class="fieldset">
     <tbody>
       <tr>

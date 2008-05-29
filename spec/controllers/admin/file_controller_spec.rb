@@ -193,6 +193,8 @@ describe Admin::FileController do
     post :remove, :id => path2id(second_test_dir), :version => initial_version 
     flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be deleted."
     response.should be_success
+    second_version = AssetLock.lock_version
+    puts "VERSION " + initial_version.to_s + "-" + second_version.to_s 
     Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_dir)).rmdir
   end
 

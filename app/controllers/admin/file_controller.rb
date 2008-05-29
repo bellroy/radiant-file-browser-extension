@@ -10,34 +10,40 @@ class Admin::FileController < ApplicationController
     @parent_id = params[:parent_id]
     if request.post? 
       new_type = params[:new_type]
+      version = params[:version]
       if @parent_id == '' or @parent_id.nil?
         upload_location = FileBrowserExtension.asset_path        
       else
         upload_location = id2path(@parent_id)        
       end
    
-      if new_type == 'UPLOAD' && (upload = params[:asset][:uploaded_data])
-        new_file = Pathname.new(File.join(upload_location, upload.original_filename))
-        unless new_file.file?
-          File.open(new_file, 'wb') { |f| f.write(upload.read) }
-          AssetLock.new_lock_version
-        else
-          flash[:error] = "Filename already exists."
-        end
-        redirect_to files_path      
-      elsif new_type == 'CREATE'
-        directory_name = params[:asset][:directory_name]
-        new_dir = File.join(upload_location, directory_name)        
-        directory_path = Pathname.new(new_dir)
-        unless directory_path.directory?
-          Dir.mkdir(directory_path) 
-          AssetLock.new_lock_version
-        else
-          flash[:error] = "Directory already exists."
-        end
-        redirect_to files_path         
-      end      
+      if confirm_version(version) or (@parent_id == '' or @parent_id.nil?)
+	      if new_type == 'UPLOAD' && (upload = params[:asset][:uploaded_data])
+		new_file = Pathname.new(File.join(upload_location, upload.original_filename))
+		unless new_file.file?
+		  File.open(new_file, 'wb') { |f| f.write(upload.read) }
+		  AssetLock.new_lock_version
+		else
+		  flash[:error] = "Filename already exists."
+		end
+		redirect_to files_path      
+	      elsif new_type == 'CREATE'
+		directory_name = params[:asset][:directory_name]
+		new_dir = File.join(upload_location, directory_name)        
+		directory_path = Pathname.new(new_dir)
+		unless directory_path.directory?
+		  Dir.mkdir(directory_path) 
+		  AssetLock.new_lock_version
+		else
+		  flash[:error] = "Directory already exists."
+		end
+		redirect_to files_path         
+	      end      
+       else
+              flash[:error] = "The assets have been modified since it was last loaded hence could not be created/uploaded."
+       end
     end
+    @asset_lock = AssetLock.lock_version
   end
   
   def children
@@ -61,7 +67,7 @@ class Admin::FileController < ApplicationController
           file_dir = '' 
           if @path.directory?
             file_dir = 'directory'         
-            @path.rmdir
+            FileUtils.rm_r @path, :force => true
           elsif @path.file?
             file_dir = 'file'         
             @path.delete

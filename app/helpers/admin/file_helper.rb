@@ -145,7 +145,6 @@ module Admin::FileHelper
     #   link_to(image_tag('admin/remove.png', :alt => 'Remove File'), remove_file_path(:path => path.to_s))
     # end    
     
-    #added by Sanath
     def expander(dont_expand)
       image(dont_expand ? "collapse" : "expand", 
             :class => "expander", :alt => 'toggle children', 
