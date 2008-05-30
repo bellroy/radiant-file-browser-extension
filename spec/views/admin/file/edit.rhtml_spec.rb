@@ -12,6 +12,7 @@ describe "/admin/file/edit.rhtml" do
         assigns[:file_name] = file_name
         render "/admin/file/edit.rhtml"
 
+        response.should be_success
         response.should have_tag("form[action=''][method=post]") do
              with_tag("input[type='hidden'][name='version'][value=#{@asset_lock}]")
              with_tag("input[type='text'][name='file_name'][value=#{file_name}]")
