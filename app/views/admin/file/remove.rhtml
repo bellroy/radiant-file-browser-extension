@@ -1,5 +1,3 @@
-<% include_javascript 'admin/sitemap' -%>
-
 <% files = '' -%>
 <% files = pluralize(@path.entries.length, 'entry') if @path.directory? -%>
 
@@ -19,8 +17,6 @@
 
 <script>
 	
-var asset_list = '<%= asset_to_array(@assets) -%>';	
-	
 //over-riding the sitemap.js -> getBranch method	
 SiteMap.addMethods ({
 	getBranch: function(row) {
@@ -33,7 +29,7 @@ SiteMap.addMethods ({
 	      '../files/children?indent_level=' + level,
 	      {
 			method: "post",		  	
-		  	parameters: { id: id, asset_list: asset_list },	
+		  	parameters: { id: id },	
 	        insertion: "after",
 	        onLoading:  function() { spinner.show(); this.updating = true  }.bind(this),
 	        onComplete: function() { spinner.fade(); this.updating = false }.bind(this)
