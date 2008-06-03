@@ -1,0 +1,14 @@
+= Installation
+
+1. Copy plugin to <radiant>/vendor/extensions/file_browser/
+
+2. Create web server write-able 'assets' folder in 'public' (<radiant>/vendor/public/assets)
+
+3. Migrate extensions
+
+   (from root of application)
+   % rake rake radiant:extensions:file_browser:migrate RAILS_ENV="production"
+
+4. Restart web server
+
+If installed correctly, "File Browser" will be listed on extensions listing (http://locahost:3000/admin/extensions)
