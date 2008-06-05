@@ -194,7 +194,6 @@ describe Admin::FileController do
     flash[:error].to_s.should == "The assets have been modified since it was last loaded hence could not be deleted."
     response.should be_success
     second_version = AssetLock.lock_version
-    puts "VERSION " + initial_version.to_s + "-" + second_version.to_s 
     Pathname.new(File.join(FileBrowserExtension.asset_path, @second_test_dir)).rmdir
   end
 
@@ -234,10 +233,13 @@ describe Admin::FileController do
   end
 
   it "should create a child directory within another directory" do
-    post :new, :parent_id => nil, :new_type => 'CREATE', :asset => {:directory_name => @test_dir} 
+    version = AssetLock.lock_version
+    post :new, :parent_id => '', :new_type => 'CREATE', :version => version, :asset => {:directory_name => @test_dir}
+puts "VERSION-" + version.to_s + "-Parent ID-"
     test_dir = File.join(FileBrowserExtension.asset_path, @test_dir)    
     parent_id = path2id(test_dir)
-    post :new, :parent_id => parent_id, :new_type => 'CREATE', :asset => {:directory_name => @second_test_dir} 
+    post :new, :parent_id => parent_id, :new_type => 'CREATE', :version => version, :asset => {:directory_name => @second_test_dir}
+puts "VERSION-" + version.to_s + "-Parent ID-"
     response.should redirect_to(files_path)
     Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir, @second_test_dir)).rmdir
     Pathname.new(File.join(FileBrowserExtension.asset_path, @test_dir)).rmdir

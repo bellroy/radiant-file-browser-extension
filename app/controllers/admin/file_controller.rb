@@ -10,38 +10,24 @@ class Admin::FileController < ApplicationController
     @parent_id = params[:parent_id]
     if request.post? 
       new_type = params[:new_type]
-      version = params[:version]
-      if @parent_id == '' or @parent_id.nil?
-        upload_location = FileBrowserExtension.asset_path        
-      else
-        upload_location = id2path(@parent_id)        
-      end
-   
-      if confirm_version(version) or (@parent_id == '' or @parent_id.nil?)
-	      if new_type == 'UPLOAD' && (upload = params[:asset][:uploaded_data])
-		new_file = Pathname.new(File.join(upload_location, upload.original_filename))
-		unless new_file.file?
-		  File.open(new_file, 'wb') { |f| f.write(upload.read) }
-		  AssetLock.new_lock_version
-		else
-		  flash[:error] = "Filename already exists."
-		end
-		redirect_to files_path      
-	      elsif new_type == 'CREATE'
-		directory_name = params[:asset][:directory_name]
-		new_dir = File.join(upload_location, directory_name)        
-		directory_path = Pathname.new(new_dir)
-		unless directory_path.directory?
-		  Dir.mkdir(directory_path) 
-		  AssetLock.new_lock_version
-		else
-		  flash[:error] = "Directory already exists."
-		end
-		redirect_to files_path         
-	      end      
-       else
-              flash[:error] = "The assets have been modified since it was last loaded hence could not be created/uploaded."
-       end
+      version = params[:version]   
+      if new_type == 'UPLOAD'
+        upload = params[:asset][:uploaded_data]
+        file_asset = FileAsset.create(upload, @parent_id, version)
+	if file_asset.success
+ 	   redirect_to files_path  		  
+	else
+           flash[:error] = file_asset.errors.to_s
+	end  
+      elsif new_type == 'CREATE'
+	directory_name = params[:asset][:directory_name]
+        directory_asset = DirectoryAsset.create(directory_name, @parent_id, version) 
+        if directory_asset.success
+           redirect_to files_path  
+	else
+	   flash[:error] = directory_asset.errors.to_s           
+	end
+      end             
     end
     @asset_lock = AssetLock.lock_version
   end
@@ -63,21 +49,22 @@ class Admin::FileController < ApplicationController
     @asset_lock = AssetLock.lock_version
     if request.post?
       asset_version = params[:version]      
-      if confirm_version(asset_version)
-          file_dir = '' 
-          if @path.directory?
-            file_dir = 'directory'         
-            FileUtils.rm_r @path, :force => true
-          elsif @path.file?
-            file_dir = 'file'         
-            @path.delete
+      file_dir = '' 
+      if @path.directory?
+          if DirectoryAsset.destroy(id, asset_version)    
+              flash[:notice] = "The directory was successfully removed from the assets."      
+              redirect_to :action => 'index' 
+          else
+              flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted." 
           end
-          flash[:notice] = "The "+file_dir+" was successfully removed from the assets."
-          AssetLock.new_lock_version         
-          redirect_to :action => 'index'
-      else
-          flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted."        
-      end  
+      elsif @path.file?
+          if FileAsset.destroy(id, asset_version)
+              flash[:notice] = "The file was successfully removed from the assets."      
+              redirect_to :action => 'index'
+          else
+              flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted." 
+          end
+      end
     end
   end
   
@@ -85,47 +72,29 @@ class Admin::FileController < ApplicationController
     id = params[:id]
     if request.post?
       asset_version = params[:version]      
-      if confirm_version(asset_version)          
-          file_path = Pathname.new(File.join(FileBrowserExtension.asset_path, params[:file_name])) 
-          path = id2path(id)
-          if path.file?
-            if !file_path.file?
-                path.rename(file_path)
-                AssetLock.new_lock_version   
-                flash[:notice] = "Filename has been sucessfully edited."
-            else
-                flash[:error] = "Filename already exists."  
-            end
-          elsif path.directory?
-            if !file_path.directory?
-                path.rename(file_path)
-                AssetLock.new_lock_version 
-                flash[:notice] = "Directory has been sucessfully edited."
-            else
-                flash[:error] = "Directory already exists."              
-            end
-          end
-          redirect_to :action => 'index'                 
-      else          
-          @file_name = id2path(id).basename
-          @asset_lock = AssetLock.lock_version         
-          flash[:error] = "The assets have been modified since it was last loaded hence could not be edited."
-      end
-    else
-      @file_name = id2path(id).basename
-      @asset_lock = AssetLock.lock_version
+      asset = params[:file_name]          
+      path = id2path(id)
+      if path.file?	
+           file_asset = FileAsset.update(id, asset, asset_version)	    
+           if file_asset.success		       
+                flash[:notice] = file_asset.success
+                redirect_to :action => 'index'
+           else
+                flash[:error] = file_asset.errors.to_s
+           end
+      elsif path.directory?
+           dir_asset = DirectoryAsset.update(id, asset, asset_version)
+           if dir_asset.success
+   	        flash[:notice] = dir_asset.success
+                redirect_to :action => 'index'
+           else
+                flash[:error] = dir_asset.errors.to_s
+           end
+      end               
     end
+    @file_name = id2path(id).basename
+    @asset_lock = AssetLock.lock_version
   end  
   
-  private
-  
-  def confirm_version(version)
-    current_version = AssetLock.lock_version
-    if version.to_i == current_version.to_i
-      return true
-    else
-      return false
-    end
-  end
-  
+
 end
