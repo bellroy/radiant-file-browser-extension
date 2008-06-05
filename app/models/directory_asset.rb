@@ -28,7 +28,7 @@ class DirectoryAsset < Asset
 
    def self.create(name, parent_id, version)
       object = new(name, parent_id, version)
-      if object.name
+      if object.filename
           object.save
       else
           object.errors << "Filename cannot have characters like \\ / or a leading period."  
