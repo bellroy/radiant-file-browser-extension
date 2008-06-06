@@ -31,7 +31,11 @@ class FileAsset < Asset
    def self.create(upload, parent_id, version)
       object = new(upload, parent_id, version, upload.original_filename)
       if object.filename
-          object.save
+          unless object.version.nil? and object.version.nil?
+             object.save
+          else
+             object.errors << "An error occured when trying to save."
+          end
       else
           object.errors << "Filename cannot have characters like \\ / or a leading period."  
       end
@@ -41,18 +45,22 @@ class FileAsset < Asset
    def self.update(id, name, version)
       object = new(nil, nil, version, name)
       if object.filename
-          if self.confirm_lock(version)
-              path = id2path(id)
-              new_file = Pathname.new(File.join(self.get_absolute_path, name))
-              unless new_file.file?
-                  path.rename(new_file)
-                  object.success = "Filename has been sucessfully edited."
-                  AssetLock.new_lock_version
-              else
-                  object.errors << "Filename already exists."
-              end
+          unless object.version.nil? and object.version.nil?
+              if self.confirm_lock(version)
+                  path = id2path(id)
+                  new_file = Pathname.new(File.join(self.get_absolute_path, name))
+                  unless new_file.file?
+                      path.rename(new_file)
+                      object.success = "Filename has been sucessfully edited."
+                      AssetLock.new_lock_version
+                  else
+                      object.errors << "Filename already exists."
+                  end
+             else
+                  object.errors << "The assets have been modified since it was last loaded hence could not be edited." 
+             end
          else
-              object.errors << "The assets have been modified since it was last loaded hence could not be updated." 
+              object.errors << "An error occured when trying to save."
          end
       else
           object.errors << "Filename cannot have characters like \\ / or a leading period." 

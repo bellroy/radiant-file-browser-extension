@@ -43,29 +43,33 @@ class Admin::FileController < ApplicationController
   
   def remove
     id = params[:id]
-    redirect_to :action => 'index' if id.nil? or id == ''
-    @assets = Pathname.new(FileBrowserExtension.asset_path) 
-    @path = id2path(id)
-    @asset_lock = AssetLock.lock_version
-    if request.post?
-      asset_version = params[:version]      
-      file_dir = '' 
-      if @path.directory?
-          if DirectoryAsset.destroy(id, asset_version)    
-              flash[:notice] = "The directory was successfully removed from the assets."      
-              redirect_to :action => 'index' 
-          else
-              flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted." 
-          end
-      elsif @path.file?
-          if FileAsset.destroy(id, asset_version)
-              flash[:notice] = "The file was successfully removed from the assets."      
-              redirect_to :action => 'index'
-          else
-              flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted." 
-          end
-      end
-    end
+    if id.nil? or id == ''
+       flash[:error] = "An error occured. Possibly the id field was not supplied." 
+       redirect_to :action => 'index' 
+    else
+       @assets = Pathname.new(FileBrowserExtension.asset_path) 
+       @path = id2path(id)
+       @asset_lock = AssetLock.lock_version
+       if request.post?
+	   asset_version = params[:version]      
+	   file_dir = '' 
+	   if @path.directory?
+	    	if DirectoryAsset.destroy(id, asset_version)    
+		   flash[:notice] = "The directory was successfully removed from the assets."      
+		   redirect_to :action => 'index' 
+		else
+		   flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted." 
+		end
+	   elsif @path.file?
+		if FileAsset.destroy(id, asset_version)
+		   flash[:notice] = "The file was successfully removed from the assets."      
+		   redirect_to :action => 'index'
+		else
+		    flash[:error] = "The assets have been modified since it was last loaded hence could not be deleted." 
+		end
+	   end
+       end
+     end
   end
   
   def edit

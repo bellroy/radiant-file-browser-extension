@@ -20,8 +20,9 @@ class Asset
   end
 
   def self.confirm_lock(version)
+      return false if (version.nil? or version.to_s.strip == '')
       current_version = AssetLock.lock_version
-      if version.to_i == current_version.to_i
+      if version.to_s == current_version.to_s
         return true
       else
         return false

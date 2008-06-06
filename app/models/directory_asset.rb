@@ -29,9 +29,13 @@ class DirectoryAsset < Asset
    def self.create(name, parent_id, version)
       object = new(name, parent_id, version)
       if object.filename
-          object.save
+          unless object.version.nil? and object.version.nil?
+              object.save
+          else
+             object.errors << "An error occured when trying to save."
+          end          
       else
-          object.errors << "Filename cannot have characters like \\ / or a leading period."  
+          object.errors << "Directory name cannot have characters like \\ / or a leading period."  
       end
       return object
    end
@@ -39,29 +43,34 @@ class DirectoryAsset < Asset
    def self.update(id, name, version)
       object = new(name, nil, version)
       if object.filename
-          if self.confirm_lock(version) 
-               path = id2path(id)
-               new_dir = Pathname.new(File.join(self.get_absolute_path, name))
-               unless new_dir.directory?
-                   path.rename(new_dir)
-                   object.success = "Directory has been sucessfully edited."
-                   AssetLock.new_lock_version
-              else
-                  object.errors << "Directory already exists."
-              end
+          unless object.version.nil? and object.version.nil?
+              if self.confirm_lock(version) 
+                  path = id2path(id)
+                  new_dir = Pathname.new(File.join(self.get_absolute_path, name))
+                  unless new_dir.directory?
+                       path.rename(new_dir)
+                       object.success = "Directory has been sucessfully edited."
+                       AssetLock.new_lock_version
+                 else
+                      object.errors << "Directory already exists."
+                 end
+             else
+                  object.errors << "The assets have been modified since it was last loaded hence could not be edited." 
+             end
          else
-              object.errors << "The assets have been modified since it was last loaded hence could not be updated." 
+              object.errors << "An error occured when trying to save."
          end
       else
-          object.errors << "Directory cannot have characters like \\ / or a leading period." 
+          object.errors << "Directory name cannot have characters like \\ / or a leading period." 
       end
       return object
    end
 
    def self.destroy(id, version)
       ret_val = false
-      if self.confirm_lock(version)
+      if self.confirm_lock(version) and (!id.nil? and id.to_s.strip != '')
            path = id2path(id)
+           return false if (path.to_s == Asset.get_absolute_path or path.to_s.index(Asset.get_absolute_path) != 0) #just in case
 	   FileUtils.rm_r path, :force => true
            ret_val = true
            AssetLock.new_lock_version         
