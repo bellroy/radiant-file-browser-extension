@@ -2,17 +2,17 @@ module Admin::FileHelper
   include Admin::NodeHelper
   include DirectoryArray
   
-  def print_path(path, indent_level=0, simple=false)
+  def print_path(path, indent_level=0, simple=false, asset_lock=nil)
     output = ''    
     if path.directory?
-      output << print_dir_node(path, indent_level, false, simple)
+      output << print_dir_node(path, indent_level, false, simple, asset_lock)
     else
-      output << print_file_node(path, indent_level, simple)
+      output << print_file_node(path, indent_level, simple, asset_lock)
     end
     output
   end
   
-  def render_children(path, id='', indent_level=0, show_parent_dir=false, simple=false)
+  def render_children(path, id='', indent_level=0, show_parent_dir=false, simple=false, asset_lock=nil)
     if path.directory?
       @asset_absolute_path = path    
       asset_array = get_directory_array(path)
@@ -20,17 +20,17 @@ module Admin::FileHelper
         path = path + asset_array[id.to_i].to_s
         path = Pathname.new(path)
       end
-      print_children(path, indent_level.to_i, show_parent_dir, simple)
+      print_children(path, indent_level.to_i, show_parent_dir, simple, asset_lock)
     else
-      print_file_node(path, 0, simple) 
+      print_file_node(path, 0, simple, asset_lock) 
     end
   end
   
-  def print_children(path, indent_level=0, show_parent_dir=false, simple=false)  
+  def print_children(path, indent_level=0, show_parent_dir=false, simple=false, asset_lock=nil)  
     output = ''    
-    output << print_dir_node(path, 0, true, simple) if show_parent_dir == true 
+    output << print_dir_node(path, 0, true, simple, asset_lock) if show_parent_dir == true 
     path.children.collect do |child|
-      output << print_path(child, indent_level+1, simple) unless hidden?(child)
+      output << print_path(child, indent_level+1, simple, asset_lock) unless hidden?(child)
     end
     output
   end
@@ -47,7 +47,7 @@ module Admin::FileHelper
   end
   
   private
-    def print_dir_node(file, indent_level=0, dont_expand=false, simple=false)
+    def print_dir_node(file, indent_level=0, dont_expand=false, simple=false, asset_lock=nil)
       file_id = path2id(file)
       html_class = "node level-#{indent_level} children-hidden"
       %Q{
@@ -56,7 +56,7 @@ module Admin::FileHelper
           <span class="w1">
           #{expander dont_expand}         
           #{icon_for(file)}
-          <span class="title"><a href='/admin/files/edit?id=#{file_id}'>#{file.basename.to_s}</a></span>
+          <span class="title"><a href='/admin/files/edit?id=#{file_id}&v=#{asset_lock}'>#{file.basename.to_s}</a></span>
           #{spinner(file_id)}          
           </span>
         </td>
@@ -66,22 +66,22 @@ module Admin::FileHelper
           %Q{ 
           <td class="size"></td>
           <td class="embed"></td>
-          <td class="add-child">#{link_to_new_file(file_id)}</td>
-          <td class="remove">#{link_to_remove_file(file_id)}</td> 
+          <td class="add-child">#{link_to_new_file(file_id, asset_lock)}</td>
+          <td class="remove">#{link_to_remove_file(file_id, asset_lock)}</td> 
           </tr>} 
         else
           ''
         end
     end
     
-    def print_file_node(file, indent_level=0, simple=false)
+    def print_file_node(file, indent_level=0, simple=false, asset_lock=nil)
       file_id = path2id(file)      
       html_class = "node level-#{indent_level} no-children"
       %Q{
       <tr class="#{html_class}" id = "page-#{file_id}">
         <td class="file" style="padding-left: #{padding_left(indent_level)}px">
           #{icon_for(file)}
-          <span class="title"><a href='/admin/files/edit?id=#{file_id}'>#{file.basename.to_s}</a></span>
+          <span class="title"><a href='/admin/files/edit?id=#{file_id}&v=#{asset_lock}'>#{file.basename.to_s}</a></span>
         </td>
         <td class="type">#{type_description_for(file)}</td>
         } + 
@@ -90,7 +90,7 @@ module Admin::FileHelper
           <td class="size">#{number_to_human_size(file.size)}</td>
           <td class="embed">#{link_or_embed_field_for(file)}</td>
           <td class="add-child"></td>
-          <td class="remove">#{link_to_remove_file(file_id)}</td>        
+          <td class="remove">#{link_to_remove_file(file_id, asset_lock)}</td>        
           </tr>}
         else
           ''
@@ -158,12 +158,12 @@ module Admin::FileHelper
               :style => 'display: none;')
     end    
       
-    def link_to_new_file(file_id)
-      link_to image('add-child', :alt => 'add child'), new_file_path(:parent_id => file_id)
+    def link_to_new_file(file_id, asset_lock)
+      link_to image('add-child', :alt => 'add child'), new_file_path(:parent_id => file_id, :v => asset_lock)
     end
   
-    def link_to_remove_file(file_id)
-      link_to image('remove', :alt => 'remove page'), '/admin/files/remove?id=' + file_id.to_s
+    def link_to_remove_file(file_id, asset_lock)
+      link_to image('remove', :alt => 'remove page'), '/admin/files/remove?id=' + file_id.to_s + '&v=' + asset_lock.to_s
     end
   
 end

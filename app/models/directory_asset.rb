@@ -46,7 +46,7 @@ class DirectoryAsset < Asset
           unless object.version.nil? and object.version.nil?
               if self.confirm_lock(version) 
                   path = id2path(id)
-                  new_dir = Pathname.new(File.join(self.get_absolute_path, name))
+                  new_dir = Pathname.new(File.join(path.parent, name))
                   unless new_dir.directory?
                        path.rename(new_dir)
                        object.success = "Directory has been sucessfully edited."

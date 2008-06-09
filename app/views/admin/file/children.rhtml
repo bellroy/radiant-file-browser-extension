@@ -1,1 +1,7 @@
-<%= render_children(@assets, @id, @indent_level) -%>
+<% unless @assets.nil? -%>
+	<%= render_children(@assets, @id, @indent_level, false, false, @asset_lock) -%>
+<% else -%>
+        <td colspan="6"><%= @error_message -%></td>
+<% end -%>
+
+

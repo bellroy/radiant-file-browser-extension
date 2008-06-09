@@ -13,7 +13,7 @@
   </thead>
   <tbody>
 <% if @assets -%>
-<%= render_children(@assets) -%>
+<%= render_children(@assets, '', 0, false, false, @asset_lock) -%>
 <% else -%>
   <tr>
     <td colspan="6" class="note">No Files</td>
@@ -28,7 +28,8 @@
 
 <script>
 	
-var auth_token = '<%=form_authenticity_token%>';
+var auth_token = '<%=form_authenticity_token-%>';
+var asset_lock = '<%=@asset_lock-%>';
 	
 //over-riding the sitemap.js -> getBranch method	
 SiteMap.addMethods ({
@@ -42,7 +43,7 @@ SiteMap.addMethods ({
 	      '../admin/files/children?indent_level=' + level,
 	      {
 			method: "post",		  	
-		  	parameters: { id: id, authenticity_token: auth_token },	
+		  	parameters: { id: id, authenticity_token: auth_token, asset_lock: asset_lock },	
 	        insertion: "after",
 	        onLoading:  function() { spinner.show(); this.updating = true  }.bind(this),
 	        onComplete: function() { spinner.fade(); this.updating = false }.bind(this)
