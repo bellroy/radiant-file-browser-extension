@@ -109,9 +109,9 @@ module Admin::FileHelper
       path.extname.gsub('.','')
     end
     
-    Image_extensions = %w[png gif jpg jpeg]
+    IMAGE_EXTENSIONS = %w[png gif jpg jpeg]
     def image?(path)
-      Image_extensions.include?(ext(path))
+      IMAGE_EXTENSIONS.find {|x| x.downcase == ext(path).downcase}
     end
         
     def link_or_embed_field_for(path)
