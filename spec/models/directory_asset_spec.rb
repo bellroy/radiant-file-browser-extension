@@ -19,6 +19,10 @@ describe DirectoryAsset do
     @test_dir = 'Test1' 
     @renamed_test_dir = 'Test1_new'
     @second_test_dir = 'Test2'
+    FileUtils.mkdir_p(FileBrowserExtension.asset_path)
+  end
+  after do
+    FileUtils.rm_r(FileBrowserExtension.asset_path)
   end
 
   it "should get absolute root path" do

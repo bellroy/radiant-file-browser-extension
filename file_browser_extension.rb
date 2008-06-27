@@ -35,11 +35,10 @@ class FileBrowserExtension < Radiant::Extension
   
   # Returns the absolute filesystem path to the asset directory as a string
   def self.asset_path
-    
-    if ENV["RAILS_ENV"] == 'test'
-       File.join(asset_parent_path, 'assets_test')
-    else
+    unless ENV["RAILS_ENV"] == 'test'
        File.join(asset_parent_path, 'assets')
+    else
+       File.join(File.dirname(__FILE__), 'spec/fixtures/assets_test')
     end
   end
   

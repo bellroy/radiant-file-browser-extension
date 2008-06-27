@@ -16,6 +16,10 @@ describe Admin::FileHelper do
 
   before :each do
     login_as :admin
+    FileUtils.mkdir_p(FileBrowserExtension.asset_path)
+  end
+  after do
+    FileUtils.rm_r(FileBrowserExtension.asset_path)
   end
   
   #Delete this example and add some real ones or delete this file

@@ -19,6 +19,10 @@ describe FileAsset do
     @test_upload_file = 'test_image.jpg'
     @renamed_test_upload_file = 'test_image_new.jpg'
     @second_test_upload_file = 'test_image2.jpg'
+    FileUtils.mkdir_p(FileBrowserExtension.asset_path)
+  end
+  after do
+    FileUtils.rm_r(FileBrowserExtension.asset_path)
   end
 
   it "should create a filename" do

@@ -1,4 +1,5 @@
 require File.dirname(__FILE__) + '/../../spec_helper'
+require 'fileutils'
 
 def get_absolute_root_path
     FileBrowserExtension.asset_path
@@ -33,12 +34,16 @@ describe Admin::FileController do
   scenario :users  
 
   before do
+    FileUtils.mkdir_p(FileBrowserExtension.asset_path)
     @test_dir = 'Test1' 
     @test_upload_file = 'test_image.jpg'
     @renamed_test_dir = 'Test1_new'
     @renamed_test_upload_file = 'test_image_new.jpg'
     @second_test_dir = 'Test2'
     @second_test_upload_file = 'test_image2.jpg'
+  end
+  after do
+    FileUtils.rm_r(FileBrowserExtension.asset_path)
   end
 
   before :each do
