@@ -7,7 +7,7 @@ class Asset
   protected
 
   def self.get_absolute_path
-	FileBrowserExtension.asset_path
+	    FileBrowserExtension.asset_path
   end
 
   def self.get_upload_location(parent_id)
