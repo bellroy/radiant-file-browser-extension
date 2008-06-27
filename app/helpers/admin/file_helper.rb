@@ -128,7 +128,7 @@ module Admin::FileHelper
     end
     
     def link_code_for(path)
-      %Q{<r:asset_link href="#{http_path(path)}">#{path.basename} (#{type_description_for(path)}, #{number_to_human_size(path.size)})</r:asset_link>}
+      %Q{<a href="#{http_path(path)}">#{path.basename} (#{type_description_for(path)}, #{number_to_human_size(path.size)})</a>}
     end
     
     # Returns the HTTP-Accessible path for the given absolute filesystem path
