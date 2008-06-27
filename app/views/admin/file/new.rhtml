@@ -6,12 +6,12 @@
   <table class="fieldset">
     <tbody>
       <tr>
-        <td class="label"><label for="asset_uploaded_data">File</label></td>
+        <td class="label"><label for="asset_uploaded_data">New File</label></td>
         <td class="field">
           <input type="file" name="asset[uploaded_data]" id="asset_uploaded_data" />
 		  <input type="hidden" name="asset[parent_id]" id="asset_parent_id" value='<%=@parent_id-%>'/>
         </td>
-        <td class="help">Required.</td>
+        <td class="help">A file from your computer. To upload a file into a directory you must have gotten here from the "Add Child" link to the right of that directory. Required.</td>
       </tr>
     </tbody>
   </table>  
@@ -20,21 +20,21 @@
     or <%= link_to "Cancel", files_path %>
   </p>
 <% end %>
-<p>
-	OR
-</p>
+
+<h2>OR</h2>
+
 <% form_tag "" do %>  
   <input type="hidden" name="new_type" value="CREATE" />
   <input type='hidden' name='version' value='<%= @asset_lock %>' />
   <table class="fieldset">
     <tbody>
       <tr>
-        <td class="label"><label for="asset_uploaded_data">Directory</label></td>
+        <td class="label"><label for="asset_uploaded_data">New Directory</label></td>
         <td class="field">
           <input type="text" name="asset[directory_name]" id="asset_directory_name" />
 		  <input type="hidden" name="asset[parent_id]" id="asset_parent_id" value='<%=@parent_id-%>'/>
         </td>
-        <td class="help">Required.</td>
+        <td class="help">A new directory with the name you specify. Required.</td>
       </tr>
     </tbody>
   </table>
