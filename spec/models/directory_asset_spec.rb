@@ -1,15 +1,15 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
 def get_absolute_root_path
-    FileBrowserExtension.asset_path
+  FileBrowserExtension.asset_path
 end
 
 def full_path(dirname)
-    File.join(get_absolute_root_path, dirname)
+  File.join(get_absolute_root_path, dirname)
 end
 
 def get_current_lock
-    AssetLock.lock_version
+  AssetLock.lock_version
 end
 
 

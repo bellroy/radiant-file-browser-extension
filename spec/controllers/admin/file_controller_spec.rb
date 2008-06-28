@@ -2,31 +2,31 @@ require File.dirname(__FILE__) + '/../../spec_helper'
 require 'fileutils'
 
 def get_absolute_root_path
-    FileBrowserExtension.asset_path
+  FileBrowserExtension.asset_path
 end
 
 def full_path(dirname)
-    File.join(get_absolute_root_path, dirname)
+  File.join(get_absolute_root_path, dirname)
 end
 
 def get_current_lock
-    AssetLock.lock_version
+  AssetLock.lock_version
 end
 
 def create_dir(dirname, parent_id, version=get_current_lock)
-    post :new, :parent_id => parent_id, :new_type => 'CREATE', :asset => {:directory_name => dirname}, :version => version, :v => get_current_lock
+  post :new, :parent_id => parent_id, :new_type => 'CREATE', :asset => {:directory_name => dirname}, :version => version, :v => get_current_lock
 end
 
 def create_file(filename, parent_id=nil)
-    post :new, :parent_id => parent_id, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(filename, "image/jpg")}, :version => get_current_lock, :v => get_current_lock
+  post :new, :parent_id => parent_id, :new_type => 'UPLOAD', :asset => {:uploaded_data => fixture_file_upload(filename, "image/jpg")}, :version => get_current_lock, :v => get_current_lock
 end
 
 def rename_asset(oldname, newname, version=get_current_lock)
-    post :edit, :id => path2id(full_path(oldname)), :version => version, :file_name => newname, :version => version, :v => get_current_lock
+  post :edit, :id => path2id(full_path(oldname)), :version => version, :file_name => newname, :version => version, :v => get_current_lock
 end
 
 def remove_asset(assetname, version=get_current_lock)
-    post :remove, :id => path2id(full_path(assetname)), :version => version, :v => get_current_lock
+  post :remove, :id => path2id(full_path(assetname)), :version => version, :v => get_current_lock
 end
 
 
@@ -58,12 +58,12 @@ describe Admin::FileController do
     get :index
     response.should be_success
   end
-  
+
   it "should render new asset page" do
     get :new, :v => get_current_lock
     response.should be_success    
   end
-  
+
   it "should create a directory" do
     create_dir(@test_dir, nil)
     response.should redirect_to(files_path)          
@@ -73,17 +73,17 @@ describe Admin::FileController do
     create_file(@test_upload_file)
     response.should redirect_to(files_path) 
   end  
-   
+
   it "should display edit page if clicked on edit link for directory" do
     get :edit, :id => path2id(full_path(@test_dir)), :version => get_current_lock, :v => get_current_lock
     response.should be_success        
   end
-  
+
   it "should display edit page if clicked on edit link for file" do
     get :edit, :id => path2id(full_path(@test_upload_file)), :version => get_current_lock, :v => get_current_lock
     response.should be_success        
   end
-  
+
   it "should display confirmation page when clicked on remove for a directory" do
     get :remove, :id => path2id(full_path(@test_dir)), :version => get_current_lock, :v => get_current_lock
     response.should be_success    
@@ -107,7 +107,7 @@ describe Admin::FileController do
     get :remove, :id => path2id(full_path(@renamed_test_upload_file)), :version => get_current_lock, :v => get_current_lock
     response.should be_success     
   end
-  
+
   it "should redirect to index when id is not passed to remove" do
     get :remove, :id => nil, :version => get_current_lock, :v => get_current_lock
     flash[:error].to_s.should == "An error occured. Possibly the id field was not supplied."
@@ -125,7 +125,7 @@ describe Admin::FileController do
     flash[:error].to_s.should == "An error occured. Possibly the id field was not supplied."
     response.should redirect_to(files_path)
   end
-   
+
   it "should remove the directory when confirmed" do
     remove_asset(@renamed_test_dir)
     flash[:notice].to_s.should == "The directory was successfully removed from the assets."
@@ -163,7 +163,7 @@ describe Admin::FileController do
     remove_asset(@test_upload_file)    
     remove_asset(@second_test_upload_file)     
   end
-  
+
   it "should not allow directory to be edited if a directory has been removed" do
     create_dir(@test_dir, nil)
     create_dir(@second_test_dir, nil)
