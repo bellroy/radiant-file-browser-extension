@@ -7,7 +7,7 @@
 3. Migrate extensions
 
    (from root of application)
-   % rake rake radiant:extensions:file_browser:migrate RAILS_ENV="production"
+   % rake radiant:extensions:file_browser:migrate RAILS_ENV="production"
 
 4. Restart web server
 
