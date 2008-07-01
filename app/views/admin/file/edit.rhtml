@@ -3,8 +3,8 @@
   	<% form_tag "" do %>
 	    <p class="title">
 	      <label for="page_title">File/Directory Name</label>	  
-		  <input type='hidden' name='version' value='<%= @asset_lock %>' />	
-	      <%= text_field_tag "file_name", @file_name,:class => 'textbox', :maxlength => 255 %>
+		  <input type='hidden' name='version' value='<%= @file.version %>' />	
+	      <%= text_field_tag "file_name", @file.pathname.basename,:class => 'textbox', :maxlength => 255 %>
 	    </p>
 		<br />
 		<p class="buttons">

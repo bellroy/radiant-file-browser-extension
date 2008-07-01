@@ -1,10 +1,10 @@
 class DirectoryAsset < Asset
   attr_reader :filename
 
-  def initialize(name, parent_id, version)
-    @filename = Asset.confirm_asset_validity_and_sanitize(name)
-    @parent_id = parent_id
-    @version = version
+  def initialize(asset)    
+    @filename = Asset.confirm_asset_validity_and_sanitize(asset['directory_name'])
+    @parent_id = asset['parent_id']
+    @version = asset['version']
 
     @errors = []
     @success = false
@@ -41,7 +41,7 @@ class DirectoryAsset < Asset
   end
 
   def self.update(id, name, version)
-    object = new(name, nil, version)
+    object = new({'directory_name' => name, 'parent_id' => '', 'version' => version})
     if object.filename
       unless object.version.nil? and object.version.nil?
         if self.confirm_lock(version) 

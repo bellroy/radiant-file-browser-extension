@@ -1,8 +1,34 @@
 include DirectoryArray
 
 class Asset
-  attr_reader :parent_id, :version 
+  attr_reader :parent_id, :version, :pathname, :id
   attr_accessor :errors, :success
+
+  def initialize(full_path, id, version)
+    @pathname = Pathname.new(full_path) unless full_path.nil?
+    @id = id
+    @version = version
+    @errors = []
+  end
+
+  def self.find(id, version)
+    if confirm_lock(version)
+      asset_path = id2path(id)
+      Asset.new(asset_path, id, version)
+    else
+      empty_asset = Asset.new(nil, id, version)
+      empty_asset.errors << "The assets have been modified since it was last loaded hence the asset could not be found."
+      empty_asset
+    end    
+  end
+
+  def update(file_name, version)
+    if @pathname.directory?
+      DirectoryAsset.update(@id, file_name, version)  
+    elsif @pathname.file?
+      FileAsset.update(@id, file_name, version)  
+    end
+  end
 
   protected
 
