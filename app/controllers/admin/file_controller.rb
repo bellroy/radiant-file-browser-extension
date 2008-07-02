@@ -8,6 +8,7 @@ class Admin::FileController < ApplicationController
   
   def new
     @asset_lock = AssetLock.lock_version
+    @parent_id = params[:parent_id]
     if request.post?
       if params[:new_type] == 'Directory'
         @file = DirectoryAsset.new(params[:asset])
@@ -18,18 +19,25 @@ class Admin::FileController < ApplicationController
       if @file.save
         redirect_to files_path
       else
-        render new_asset_path
+        if @file.errors.no == 0
+           flash[:error] = @file.errors.full_messages.join(", ")
+           redirect_to files_path
+        end 
       end
     end
   end
   
   def remove
-    @asset = Asset.find(params[:id], params[:version])
-    @asset.destroy
-    redirect_to files_path
-  rescue ActiveRecord::RecordNotFound => error
-    flash[:error] = error.message
-    redirect_to :action => 'index'
+    @asset = Asset.find(params[:id], params[:v])
+    @asset_lock = params[:v]
+    if request.post?      
+      if @asset.destroy
+        flash[:notice] = "The asset was successfully removed."   
+      else
+        flash[:error] = @asset.errors.full_messages.join(", ")
+      end
+      redirect_to files_path
+    end
   end
   
   def edit
@@ -37,16 +45,19 @@ class Admin::FileController < ApplicationController
     
     unless @file.pathname.nil?
       if request.post?
-        if @file.update(params[:file_name], params[:version])
+        if @file.update(params[:asset])
           flash[:notice] = @file.success
+          redirect_to files_path
         else
-          flash[:error] = @file.errors.join(", ")
+          if @file.errors.no == 0
+            flash[:error] = @file.errors.full_messages.join(", ")
+            redirect_to files_path
+          end
         end
-    
-        redirect_to files_path
+   
       end
     else
-       flash[:error] = @file.errors.join(", ")
+       flash[:error] = @file.errors.full_messages.join(", ")
        redirect_to files_path
     end
   end

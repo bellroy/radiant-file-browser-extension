@@ -1,82 +1,34 @@
 class FileAsset < Asset
-  attr_reader :upload, :filename 
+  attr_reader :uploaded_data, :filename 
 
-  def initialize(upload, parent_id, version, name)
-    @upload = upload
-    @filename = Asset.confirm_asset_validity_and_sanitize(name)
-
-    @parent_id = parent_id
-    @version = version
-
-    @errors = []
+  def initialize(asset)
+    @uploaded_data = asset['uploaded_data']
+    @filename = Asset.confirm_asset_validity_and_sanitize(@uploaded_data.original_filename)
+    @parent_id = asset['parent_id']
+    @version = asset['version']
+    @errors = Errors.new
     @success = false
   end
 
   def save
-    if Asset.confirm_lock(@version)           
-      upload_location = Asset.get_upload_location(@parent_id)
-      new_file = Pathname.new(File.join(upload_location, @filename))
-      unless new_file.file?
-        File.open(new_file, 'wb') { |f| f.write(@upload.read) }
-        AssetLock.new_lock_version
-        @success = true
-      else
-        @errors << "Filename already exists."
-      end
-    else
-      @errors << "The assets have been modified since it was last loaded hence could not be created."
-    end
-  end
-
-  def self.create(upload, parent_id, version)
-    object = new(upload, parent_id, version, upload.original_filename)
-    if object.filename
-      unless object.version.nil? and object.version.nil?
-        object.save
-      else
-        object.errors << "An error occured when trying to save."
-      end
-    else
-      object.errors << "Filename cannot have characters like \\ / or a leading period."  
-    end
-    return object
-  end
-
-  def self.update(id, name, version)
-    object = new(nil, nil, version, name)
-    if object.filename
-      unless object.version.nil? and object.version.nil?
-        if self.confirm_lock(version)
-          path = id2path(id)
-          new_file = Pathname.new(File.join(path.parent, name))
-          unless new_file.file?
-            path.rename(new_file)
-            object.success = "Filename has been sucessfully edited."
-            AssetLock.new_lock_version
-          else
-            object.errors << "Filename already exists."
-          end
+    if @filename
+      if Asset.confirm_lock(@version)           
+        upload_location = Asset.get_upload_location(@parent_id)
+        new_file = Pathname.new(File.join(upload_location, @filename))
+        unless new_file.file?
+          File.open(new_file, 'wb') { |f| f.write(@uploaded_data.read) }
+          @version = AssetLock.new_lock_version
+          @success = true
         else
-          object.errors << "The assets have been modified since it was last loaded hence could not be edited." 
+          @errors.no = 1
         end
       else
-        object.errors << "An error occured when trying to save."
+        @errors.no = 0
       end
     else
-      object.errors << "Filename cannot have characters like \\ / or a leading period." 
+      @errors.no = 2
     end
-    return object
-  end
-
-  def self.destroy(id, version)
-    ret_val = false
-    if self.confirm_lock(version)
-      path = id2path(id)
-      path.delete
-      ret_val = true
-      AssetLock.new_lock_version         
-    end
-    return ret_val
+    @success
   end
 
 end

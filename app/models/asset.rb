@@ -8,7 +8,8 @@ class Asset
     @pathname = Pathname.new(full_path) unless full_path.nil?
     @id = id
     @version = version
-    @errors = []
+    @errors = Errors.new
+    @success = false
   end
 
   def self.find(id, version)
@@ -17,17 +18,56 @@ class Asset
       Asset.new(asset_path, id, version)
     else
       empty_asset = Asset.new(nil, id, version)
-      empty_asset.errors << "The assets have been modified since it was last loaded hence the asset could not be found."
+      empty_asset.errors.no = 0
       empty_asset
     end    
   end
 
-  def update(file_name, version)
-    if @pathname.directory?
-      DirectoryAsset.update(@id, file_name, version)  
-    elsif @pathname.file?
-      FileAsset.update(@id, file_name, version)  
+  def update(asset)
+    asset_name = Asset.confirm_asset_validity_and_sanitize(asset['name'])
+    version = asset['version']
+    if asset_name
+        if Asset.confirm_lock(version) 
+          new_asset = Pathname.new(File.join(@pathname.parent, asset_name))
+          if @pathname.directory?
+            unless new_asset.directory?
+              @pathname.rename(new_asset)
+              @success = "Directory has been sucessfully edited."
+              AssetLock.new_lock_version
+            else
+              @errors.no = 1
+            end
+          elsif @pathname.file?
+            unless new_asset.file?
+              @pathname.rename(new_asset)
+              @success = "Filename has been sucessfully edited."
+              AssetLock.new_lock_version
+            else
+              @errors.no = 1
+            end
+          end
+        else
+          @errors.no = 0 
+        end
+    else
+      @errors.no = 2 
     end
+    @success
+  end
+
+  def destroy
+    if Asset.confirm_lock(@version) and (!@id.nil? and @id.to_s.strip != '')
+      path = id2path(@id)
+      return false if (path.to_s == Asset.get_absolute_path or path.to_s.index(Asset.get_absolute_path) != 0) #just in case
+      if path.directory?
+        FileUtils.rm_r path, :force => true
+      elsif path.file?
+        path.delete
+      end
+      @success = true
+      AssetLock.new_lock_version         
+    end
+    @success
   end
 
   protected
@@ -69,6 +109,28 @@ class Asset
       asset.gsub! /[^\w\.\-]/, '_'
       return asset
     end
+  end
+
+  class Errors
+     attr_accessor :no, :count, :full_messages
+
+     def initialize
+        @no = nil
+        @full_messages = []
+        @count = 0
+     end
+
+     def no=(error_no)
+        @no = error_no
+        @full_messages << CLIENT_ERRORS[@no]
+        @count = @count + 1
+     end
+
+     CLIENT_ERRORS = [
+       "The assets have been modified since it was last loaded hence the requested action could not be performed.",
+       "The Asset name you are trying to create/edit already exists hence the requested action could not be performed.",
+       "Asset name should not contain / \\ or a leading period.",
+     ]
   end
 
 end
