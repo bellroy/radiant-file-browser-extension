@@ -32,5 +32,9 @@ module DirectoryArray
       relative_path = Pathname.new(path).relative_path_from(asset_absolute_path)
       asset_array.index(relative_path)
     end
+
+    def absolute_path(asset_relative_path)
+      File.join(FileBrowserExtension.asset_path.to_s, asset_relative_path)
+    end
   
 end

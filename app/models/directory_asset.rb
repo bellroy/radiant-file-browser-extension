@@ -11,11 +11,12 @@ class DirectoryAsset < Asset
 
   def save
     if @filename
-      if Asset.confirm_lock(@version)
+      if AssetLock.confirm_lock(@version)
         upload_location = Asset.get_upload_location(@parent_id)
         new_dir = Pathname.new(File.join(upload_location, @filename))
         unless new_dir.directory?
           Dir.mkdir(new_dir)       
+          @id = path2id(new_dir)
           @version = AssetLock.new_lock_version
           @success = true
         else

@@ -29,14 +29,19 @@ class Admin::FileController < ApplicationController
   
   def remove
     @asset = Asset.find(params[:id], params[:v])
-    @asset_lock = params[:v]
-    if request.post?      
-      if @asset.destroy
-        flash[:notice] = "The asset was successfully removed."   
-      else
-        flash[:error] = @asset.errors.full_messages.join(", ")
+    @asset_lock = AssetLock.lock_version
+    unless @asset.pathname.nil?
+      if request.post?      
+        if @asset.destroy
+          flash[:notice] = "The asset was successfully removed."   
+        else
+          flash[:error] = @asset.errors.full_messages.join(", ")
+        end
+        redirect_to files_path
       end
-      redirect_to files_path
+    else
+       flash[:error] = @asset.errors.full_messages.join(", ")
+       redirect_to files_path
     end
   end
   
@@ -65,7 +70,7 @@ class Admin::FileController < ApplicationController
   def children
     if request.xhr?
       @asset_lock = params[:asset_lock]  
-      if confirm_lock(@asset_lock)
+      if AssetLock.confirm_lock(@asset_lock)
          @id = params[:id]
          @assets = Pathname.new(FileBrowserExtension.asset_path) 
          @indent_level = params[:indent_level]
@@ -74,20 +79,6 @@ class Admin::FileController < ApplicationController
       end
       render :layout => false
     end
-  end
-    
-    
-  private
-
-  # move this behaviour into the AssetLock class then use above directly or in the Asset objects
-  def confirm_lock(version)
-      return false if (version.nil? or version.to_s.strip == '')
-      current_version = AssetLock.lock_version
-      if version.to_s == current_version.to_s
-        return true
-      else
-        return false
-      end
-  end
+  end       
 
 end

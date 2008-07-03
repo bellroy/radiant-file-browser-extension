@@ -12,11 +12,12 @@ class FileAsset < Asset
 
   def save
     if @filename
-      if Asset.confirm_lock(@version)           
+      if AssetLock.confirm_lock(@version)           
         upload_location = Asset.get_upload_location(@parent_id)
         new_file = Pathname.new(File.join(upload_location, @filename))
         unless new_file.file?
           File.open(new_file, 'wb') { |f| f.write(@uploaded_data.read) }
+          @id = path2id(new_file)
           @version = AssetLock.new_lock_version
           @success = true
         else

@@ -4,21 +4,23 @@ class Asset
   attr_reader :parent_id, :version, :pathname, :id
   attr_accessor :errors, :success
 
-  def initialize(full_path, id, version)
-    @pathname = Pathname.new(full_path) unless full_path.nil?
-    @id = id
-    @version = version
+  def initialize(full_path, version)
+    unless full_path.nil?
+      @pathname = Pathname.new(full_path) 
+      @id = path2id(full_path)
+      @version = version
+    end
     @errors = Errors.new
     @success = false
   end
 
   def self.find(id, version)
-    if confirm_lock(version)
+    if AssetLock.confirm_lock(version) and (!id.nil? and id.to_s.strip != '')
       asset_path = id2path(id)
-      Asset.new(asset_path, id, version)
+      Asset.new(asset_path, version)
     else
-      empty_asset = Asset.new(nil, id, version)
-      empty_asset.errors.no = 0
+      empty_asset = Asset.new(nil, version)
+      (id.nil? or id.to_s.strip == '') ? empty_asset.errors.no = 3 : empty_asset.errors.no = 0
       empty_asset
     end    
   end
@@ -27,11 +29,13 @@ class Asset
     asset_name = Asset.confirm_asset_validity_and_sanitize(asset['name'])
     version = asset['version']
     if asset_name
-        if Asset.confirm_lock(version) 
+        if AssetLock.confirm_lock(version) 
           new_asset = Pathname.new(File.join(@pathname.parent, asset_name))
           if @pathname.directory?
             unless new_asset.directory?
               @pathname.rename(new_asset)
+              @pathname = Pathname.new(new_asset)
+              @id = path2id(new_asset)
               @success = "Directory has been sucessfully edited."
               AssetLock.new_lock_version
             else
@@ -40,6 +44,8 @@ class Asset
           elsif @pathname.file?
             unless new_asset.file?
               @pathname.rename(new_asset)
+              @pathname = Pathname.new(new_asset)
+              @id = path2id(new_asset)
               @success = "Filename has been sucessfully edited."
               AssetLock.new_lock_version
             else
@@ -56,7 +62,7 @@ class Asset
   end
 
   def destroy
-    if Asset.confirm_lock(@version) and (!@id.nil? and @id.to_s.strip != '')
+    if AssetLock.confirm_lock(@version) and (!@id.nil? and @id.to_s.strip != '')
       path = id2path(@id)
       return false if (path.to_s == Asset.get_absolute_path or path.to_s.index(Asset.get_absolute_path) != 0) #just in case
       if path.directory?
@@ -83,16 +89,6 @@ class Asset
       upload_location = id2path(parent_id)        
     end
     return upload_location
-  end
-
-  def self.confirm_lock(version)
-    return false if (version.nil? or version.to_s.strip == '')
-    current_version = AssetLock.lock_version
-    if version.to_s == current_version.to_s
-      return true
-    else
-      return false
-    end
   end
 
   def self.confirm_asset_validity_and_sanitize(asset)
@@ -130,6 +126,7 @@ class Asset
        "The assets have been modified since it was last loaded hence the requested action could not be performed.",
        "The Asset name you are trying to create/edit already exists hence the requested action could not be performed.",
        "Asset name should not contain / \\ or a leading period.",
+       "An error occured when trying to perform the requestion action. Possibly the id field is not provided.",
      ]
   end
 

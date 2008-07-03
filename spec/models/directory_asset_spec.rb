@@ -21,6 +21,7 @@ describe DirectoryAsset do
     @second_test_dir = 'Test2'
     FileUtils.mkdir_p(FileBrowserExtension.asset_path)
   end
+
   after do
     FileUtils.rm_r(FileBrowserExtension.asset_path)
   end

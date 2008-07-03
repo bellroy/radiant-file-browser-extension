@@ -16,4 +16,23 @@ describe AssetLock do
 
     AssetLock.new_lock_version.should > lock_version
   end
+
+  it "should return true if version matches" do
+    lock_version = AssetLock.lock_version
+
+    AssetLock.confirm_lock(lock_version).should == true
+  end
+
+  it "should return false if version does not match" do
+    lock_version = AssetLock.lock_version
+
+    AssetLock.new_lock_version
+    AssetLock.confirm_lock(lock_version).should == false
+  end
+
+  it "should return false if version if not sent for confirm" do
+    AssetLock.confirm_lock(nil).should == false
+    AssetLock.confirm_lock('').should == false
+  end
+
 end

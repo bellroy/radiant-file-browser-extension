@@ -121,19 +121,19 @@ describe Admin::FileController do
 
   it "should redirect to index when id is not passed to remove" do
     get :remove, :id => nil, :version => get_current_lock, :v => get_current_lock
-    flash[:error].to_s.should == "An error occured. Possibly the id field was not supplied."
+    flash[:error].to_s.should == error_message(3)
     response.should redirect_to(files_path)       
 
     get :remove, :id => '', :version => get_current_lock, :v => get_current_lock
-    flash[:error].to_s.should == "An error occured. Possibly the id field was not supplied."
+    flash[:error].to_s.should == error_message(3)
     response.should redirect_to(files_path)
 
     post :remove, :id =>  nil, :version => get_current_lock, :v => get_current_lock
-    flash[:error].to_s.should == "An error occured. Possibly the id field was not supplied."
+    flash[:error].to_s.should == error_message(3)
     response.should redirect_to(files_path)      
 
     post :remove, :id => '', :version => get_current_lock, :v => get_current_lock
-    flash[:error].to_s.should == "An error occured. Possibly the id field was not supplied."
+    flash[:error].to_s.should == error_message(3)
     response.should redirect_to(files_path)
   end
 
@@ -286,17 +286,15 @@ describe Admin::FileController do
 
   it "should not create a directory if the directory aleady exists" do
     create_dir(@test_dir, nil)
-    create_dir(@test_dir, nil)
-    flash[:error].to_s.should == "Directory already exists."
-    response.should redirect_to(files_path)       
+    create_dir(@test_dir, nil)    
+    response.should be_success     
     remove_asset(@test_dir)
   end
 
   it "should not create a file if file already exists" do
     create_file(@test_upload_file)
     create_file(@test_upload_file)
-    flash[:error].to_s.should == "Filename already exists."
-    response.should  redirect_to(files_path)       
+    response.should be_success 
     remove_asset(@test_upload_file)
   end
 
