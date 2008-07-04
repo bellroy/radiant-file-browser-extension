@@ -159,7 +159,7 @@ describe Asset do
   end
   
 #########
-  decribe "protected methods" do
+  describe "protected methods" do
 
     it "should get the absolute root path" do
       DirectoryAsset.get_absolute_path.should == FileBrowserExtension.asset_path
