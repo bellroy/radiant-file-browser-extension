@@ -2,21 +2,26 @@ require File.dirname(__FILE__) + '/../../../spec_helper'
 
 describe "/admin/file/edit.rhtml" do
 
-    before(:each) do
-        @asset_lock = AssetLock.lock_version
-        assigns[:asset_lock] = @asset_lock
-    end
+  before(:each) do
+    @test_upload_file = 'test_image.jpg'
+    FileUtils.mkdir_p(FileBrowserExtension.asset_path)
+    @file = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => AssetLock.lock_version)
+    @file.save
+ 
+    assigns[:file] = @file
+  end
+  after do
+    FileUtils.rm_r(FileBrowserExtension.asset_path)
+  end
 
-    it "should render edit asset page" do
-        file_name = "JustAFileName.txt"
-        assigns[:file_name] = file_name
-        render "/admin/file/edit.rhtml"
+  it "should render edit asset page" do
+    render "/admin/file/edit.rhtml"
 
-        response.should be_success
-        response.should have_tag("form[action=''][method=post]") do
-             with_tag("input[type='hidden'][name='version'][value=#{@asset_lock}]")
-             with_tag("input[type='text'][name='file_name'][value=#{file_name}]")
-        end
+    response.should be_success
+    response.should have_tag("form[action=''][method=post]") do
+      with_tag("input[type='hidden'][name='asset[version]'][value=#{@file.version}]")
+      with_tag("input[type='text'][name='asset[name]'][value=#{@file.pathname.basename}]")
     end
+  end
 
 end

@@ -42,7 +42,7 @@
 	    <p class="title">
 	      <label for="page_title">File/Directory Name</label>	  
 		  <input type='hidden' name='asset[version]' value='<%= @file.version %>' />	
-	      <%= text_field_tag "asset[name]", @file.pathname.basename,:class => 'textbox', :maxlength => 255 %>
+	      <%= text_field_tag "asset[name]", @file.pathname.basename, :class => 'textbox', :maxlength => 255 %>
 	    </p>
 		<br />
 		<p class="buttons">

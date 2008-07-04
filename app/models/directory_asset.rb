@@ -17,6 +17,7 @@ class DirectoryAsset < Asset
         unless new_dir.directory?
           Dir.mkdir(new_dir)       
           @id = path2id(new_dir)
+          @pathname = new_dir
           @version = AssetLock.new_lock_version
           @success = true
         else

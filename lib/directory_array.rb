@@ -33,8 +33,9 @@ module DirectoryArray
       asset_array.index(relative_path)
     end
 
-    def absolute_path(asset_relative_path)
-      File.join(FileBrowserExtension.asset_path.to_s, asset_relative_path)
+    def absolute_path(asset_relative_path=nil)
+      asset_relative_path = nil if (!asset_relative_path.nil? and asset_relative_path.strip == '')
+      asset_relative_path.nil? ? FileBrowserExtension.asset_path.to_s : File.join(FileBrowserExtension.asset_path.to_s, asset_relative_path)
     end
   
 end

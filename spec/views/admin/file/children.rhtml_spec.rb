@@ -1,22 +1,30 @@
 require File.dirname(__FILE__) + '/../../../spec_helper'
 
+def current_version
+  AssetLock.lock_version
+end
+
 describe "/admin/file/children.rhtml" do
 
     before(:each) do
-        @test_dir_path = File.join(FileBrowserExtension.asset_path, 'Test1')
+      @test_dir = 'Test1' 
+      FileUtils.mkdir_p(FileBrowserExtension.asset_path)
+
+      @dir_asset = DirectoryAsset.new('directory_name' => @test_dir, 'parent_id' => nil, 'version' => current_version)
+      @dir_asset.save
+    end
+
+    after do
+      FileUtils.rm_r(FileBrowserExtension.asset_path)
     end
 
     it "should render children" do
-        Dir.mkdir(@test_dir_path)      
-	@id = path2id(@test_dir_path) 
-        @assets = Pathname.new(FileBrowserExtension.asset_path)   
-        assigns[:id] = @id
-        assigns[:assets] = @assets
-        assigns[:ident_level] = 0
+        assigns[:id] = @dir_asset.id
+        assigns[:assets] = @dir_asset.pathname
+        assigns[:indent_level] = 0
+        assigns[:asset_lock] = current_version
 
         render "/admin/file/children.rhtml"
-        Pathname.new(@test_dir_path).rmdir
-
         response.should be_success
     end
 
