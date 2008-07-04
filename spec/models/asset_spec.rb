@@ -33,27 +33,39 @@ describe Asset do
 
   describe "find" do
 
-    it "should find asset if id and version matches(directory)" do
+    it "should find asset if id and version matches for a directory" do
       Asset.find(@dir.id, current_version).pathname.should == Pathname.new(absolute_path(@test_dir))
     end
 
-    it "should not find the asset if version does not match and provide an error no. 0(directory)" do
+    it "should not find the asset if version does not match and provide an error with error no. 0 for a directory" do
       asset = Asset.find(@dir.id, (current_version + 1))
       asset.pathname.should == nil
       asset.errors.full_messages.should == [error_message(0)]
     end
     
-    it "should find asset if id and version matches(file)" do
+    it "should find asset if id and version matches for a file" do
       Asset.find(@file.id, current_version).pathname.should == Pathname.new(absolute_path(@test_upload_file))
     end
     
-    it "should not find the asset if version does not match and provide an error no. 0(file)" do
+    it "should not find the asset if version does not match and provide an error with error no. 0 for a file" do
       asset = Asset.find(@file.id, (current_version + 1))
       asset.pathname.should == nil
       asset.errors.full_messages.should == [error_message(0)]
     end
 
-    it "should provide error no. 3 if no. id is not sent" do
+    it "should not find the asset if version parameter is not sent and provide an error with error no. 0 for a directory" do
+      asset = Asset.find(@dir.id, nil)
+      asset.pathname.should == nil
+      asset.errors.full_messages.should == [error_message(0)]
+    end
+
+    it "should not find the asset if version parameter is not sent and provide an error with error no. 0 for a file" do
+      asset = Asset.find(@file.id, nil)
+      asset.pathname.should == nil
+      asset.errors.full_messages.should == [error_message(0)]
+    end
+
+    it "should provide error with error no. 3 if id parameter is not sent" do
       asset = Asset.find(nil, current_version)
       asset.pathname.should == nil
       asset.errors.full_messages.should == [error_message(3)]
