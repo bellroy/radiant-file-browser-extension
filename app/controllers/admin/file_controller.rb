@@ -9,27 +9,32 @@ class Admin::FileController < ApplicationController
   def new
     @asset_lock = AssetLock.lock_version
     @parent_id = params[:parent_id]
-    if request.post?
-      if params[:new_type] == 'Directory'
-        @file = DirectoryAsset.new(params[:asset])
-      else
-        @file = FileAsset.new(params[:asset])
-      end
+    params[:v].blank? ? lock_pass = true : lock_pass = AssetLock.confirm_lock(params[:v])
+    if lock_pass
+      if request.post?
+        if params[:new_type] == 'Directory'
+          @file = DirectoryAsset.new(params[:asset])
+        else
+          @file = FileAsset.new(params[:asset])
+        end
 
-      if @file.save
-        redirect_to files_path
-      else
-        if @file.errors.no == 0
-           flash[:error] = @file.errors.full_messages.join(", ")
-           redirect_to files_path
-        end 
+        if @file.save
+          redirect_to files_path
+        else
+          if @file.errors.no == 0
+             flash[:error] = @file.errors.full_messages.join(", ")
+             redirect_to files_path
+          end 
+        end
       end
+    else
+      flash[:error] = Asset::Errors::CLIENT_ERRORS[0]
+      redirect_to files_path
     end
   end
   
   def remove
     @asset = Asset.find(params[:id], params[:v])
-    @asset_lock = AssetLock.lock_version
     unless @asset.pathname.nil?
       if request.post?      
         if @asset.destroy

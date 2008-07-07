@@ -28,7 +28,7 @@ describe "/admin/file/remove.rhtml" do
 
       response.should be_success
       response.should have_tag("form[action=''][method=post]") do
-         with_tag("input[type='hidden'][name='version'][value=#{current_version}]")
+        # with_tag("input[type='hidden'][name='version'][value=#{current_version}]")
       end
   
     end

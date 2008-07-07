@@ -15,21 +15,20 @@ class Asset
   end
 
   def self.find(id, version)
-    if AssetLock.confirm_lock(version) and (!id.nil? and id.to_s.strip != '')
+    if AssetLock.confirm_lock(version) and !id.blank? 
       asset_path = id2path(id)
       Asset.new(asset_path, version)
     else
       empty_asset = Asset.new(nil, version)
-      (id.nil? or id.to_s.strip == '') ? empty_asset.errors.no = 3 : empty_asset.errors.no = 0
+      id.blank? ? empty_asset.errors.no = 3 : empty_asset.errors.no = 0
       empty_asset
     end    
   end
 
   def update(asset)
     asset_name = Asset.confirm_asset_validity_and_sanitize(asset['name'])
-    version = asset['version']
     if asset_name
-        if AssetLock.confirm_lock(version) 
+        if AssetLock.confirm_lock(@version) and !@pathname.nil?
           new_asset = Pathname.new(File.join(@pathname.parent, asset_name))
           if @pathname.directory?
             unless new_asset.directory?
@@ -62,7 +61,7 @@ class Asset
   end
 
   def destroy
-    if AssetLock.confirm_lock(@version) and (!@id.nil? and @id.to_s.strip != '')
+    if AssetLock.confirm_lock(@version) and !@id.blank? 
       path = id2path(@id)
       return false if (path.to_s == Asset.get_absolute_path or path.to_s.index(Asset.get_absolute_path) != 0) #just in case
       if path.directory?
@@ -83,7 +82,7 @@ class Asset
   end
 
   def self.get_upload_location(parent_id)
-    if parent_id == '' or parent_id.nil?
+    if parent_id.blank?
       upload_location = self.get_absolute_path        
     else
       upload_location = id2path(parent_id)        

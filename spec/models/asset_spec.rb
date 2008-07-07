@@ -143,19 +143,17 @@ describe Asset do
     end
 
     it "should not edit a directory if version mismatch occurs and provide an asset error with error no. 0" do
-      asset = Asset.find(@dir.id, current_version)
-      asset.update('name' => @second_test_dir, 'version' => (current_version + 1))
-      asset.pathname.should == Pathname.new(absolute_path(@test_dir))
+      asset = Asset.find(@dir.id, (current_version + 1))
+      asset.update('name' => @second_test_dir)
       Pathname.new(absolute_path(@test_dir)).directory?.should == true
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should include(error_message(0))
     end
 
     it "should not edit a file if version mismatch occurs and provide an asset error with error no. 0" do
-      asset = Asset.find(@file.id, current_version)
-      asset.update('name' => @second_test_upload_file, 'version' => (current_version + 1))
-      asset.pathname.should == Pathname.new(absolute_path(@test_upload_file))
+      asset = Asset.find(@file.id, (current_version + 1))
+      asset.update('name' => @second_test_upload_file)
       Pathname.new(absolute_path(@test_upload_file)).file?.should == true
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should include(error_message(0))
     end
 
   end

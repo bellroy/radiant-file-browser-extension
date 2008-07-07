@@ -11,8 +11,7 @@
   </tbody>
 </table>
 
-<% form_tag "" do -%>
-  <input type='hidden' name='version' value='<%= @asset_lock %>' />	
+<% form_tag "" do -%>	
   <p class="buttons"><%= submit_tag "Delete #{files}", :class => 'button' %> or <%= link_to 'Cancel', '/admin/files/' %></p>
 <% end -%>
 
