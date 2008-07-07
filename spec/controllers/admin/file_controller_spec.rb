@@ -64,230 +64,273 @@ describe Admin::FileController do
     response.should be_success
   end
 
-  it "should render new asset page" do
-    get :new, :v => current_version
-    response.should be_success    
+  describe "Create Direcotory/Upload file" do
+
+    before do
+
+    end
+
+    it "should render new asset page" do
+      get :new, :v => current_version
+      response.should be_success    
+    end
+
+    it "should create a directory" do
+      create_dir(@test_dir, nil)
+      response.should redirect_to(files_path)          
+    end
+
+    it "should create upload files" do
+      create_file(@test_upload_file)
+      response.should redirect_to(files_path) 
+    end  
+
+    it "should show new asset page when Add Child is clicked" do
+      create_dir(@test_dir, nil)
+      parent_id = path2id(full_path(@test_dir))
+      get :new, :parent_id => parent_id, :v => current_version
+      response.should be_success
+    end
+
+    it "should create a child directory within another directory" do
+      create_dir(@test_dir, nil)
+      parent_id = path2id(full_path(@test_dir))
+      post :new, :new_type => 'Directory', :asset => {:directory_name => @second_test_dir, :parent_id => parent_id, :version => current_version}, :v => current_version
+      response.should redirect_to(files_path)
+    end
+
+    it "should not create a child directory if a directory meanwhile has been added" do
+      create_dir(@test_dir, nil)
+      initial_version = AssetLock.lock_version
+      parent_id = path2id(full_path(@test_dir))
+      create_dir(@second_test_dir, nil) 
+      create_dir(@renamed_test_dir, parent_id, initial_version)
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+    it "should not create a child directory if a file meanwhile has been added" 
+    it "should not create a child directory if a directory meanwhile has been edited" 
+    it "should not create a child directory if a directory meanwhile has been removed" 
+    it "should not create a child directory if a file meanwhile has been edited" 
+    it "should not create a child directory if a file meanwhile has been removed" 
+
+    it "should not open the Add Child page if an asset is added meanwhile" do
+      create_dir(@test_dir, nil)
+      initial_lock = AssetLock.lock_version
+      create_dir(@second_test_dir, nil) 
+      parent_id = path2id(full_path(@test_dir))
+      get :new, :parent_id => parent_id, :v => initial_lock
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)      
+    end
+    it "should not open the Add Child page if a file meanwhile has been added" 
+    it "should not open the Add Child page if a directory meanwhile has been edited" 
+    it "should not open the Add Child page if a directory meanwhile has been removed" 
+    it "should not open the Add Child page if a file meanwhile has been edited" 
+    it "should not open the Add Child page if a file meanwhile has been removed" 
+
+    it "should not create a directory if the directory aleady exists" do
+      create_dir(@test_dir, nil)
+      create_dir(@test_dir, nil)    
+      flash[:error].to_s.should == error_message(1)
+      response.should be_success     
+    end
+
+    it "should not create a file if file already exists" do
+      create_file(@test_upload_file)
+      create_file(@test_upload_file)
+      flash[:error].to_s.should == error_message(1)
+      response.should be_success 
+    end
+
   end
 
-  it "should create a directory" do
-    create_dir(@test_dir, nil)
-    response.should redirect_to(files_path)          
+
+  describe "Editing of Directory/filenames" do
+
+    before do
+      create_dir(@test_dir, nil)
+      create_file(@test_upload_file)
+    end
+
+    it "should display edit page if clicked on edit link for directory" do
+      get :edit, :id => path2id(full_path(@test_dir)), :version => current_version, :v => current_version
+      response.should be_success        
+    end
+
+    it "should display edit page if clicked on edit link for file" do
+      get :edit, :id => path2id(full_path(@test_upload_file)), :version => current_version, :v => current_version
+      response.should be_success        
+    end
+
+    it "should rename the directory" do
+      rename_asset(@test_dir, @renamed_test_dir)
+      flash[:notice].to_s.should == "Directory has been sucessfully edited." 
+      response.should redirect_to(files_path) 
+    end
+
+    it "should rename the file" do
+      rename_asset(@test_upload_file, @renamed_test_upload_file)
+      flash[:notice].to_s.should == "Filename has been sucessfully edited." 
+      response.should redirect_to(files_path)
+    end
+
+    it "should not allow directory to be edited if a new directory is added" do
+      initial_version = AssetLock.lock_version
+      create_dir(@second_test_dir, nil)
+      rename_asset(@test_dir, @renamed_test_dir, initial_version)
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
+    it "should not allow filename to be edited if a new file is added" do
+      initial_version = AssetLock.lock_version    
+      create_file(@second_test_upload_file)
+      rename_asset(@test_upload_file, @renamed_test_upload_file, initial_version)
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
+    it "should not allow directory to be edited if a directory has been removed" do
+      create_dir(@second_test_dir, nil)
+      initial_version = AssetLock.lock_version  
+      remove_asset(@second_test_dir) 
+      rename_asset(@test_dir, @renamed_test_dir, initial_version)   
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
+    it "should not allow filename to be edited if a file has been removed" do
+      create_file(@second_test_upload_file)
+      initial_version = AssetLock.lock_version   
+      remove_asset(@second_test_upload_file)
+      rename_asset(@test_upload_file, @renamed_test_upload_file, initial_version)  
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
+    it "should not allow directory to be renamed to an existing directory name" do
+      create_dir(@second_test_dir, nil)
+      rename_asset(@test_dir, @second_test_dir, current_version)   
+      flash[:error].to_s.should == error_message(1)
+      response.should be_success      
+    end
+
+    it "should not allow file to be renamed to an existing filename" do
+      create_file(@second_test_upload_file)
+      rename_asset(@test_upload_file, @second_test_upload_file, current_version) 
+      flash[:error].to_s.should == error_message(1)
+      response.should be_success    
+    end
+ 
   end
 
-  it "should create upload files" do
-    create_file(@test_upload_file)
-    response.should redirect_to(files_path) 
-  end  
+  describe "Removing of Directory/files" do
 
-  it "should display edit page if clicked on edit link for directory" do
-    create_dir(@test_dir, nil)
-    get :edit, :id => path2id(full_path(@test_dir)), :version => current_version, :v => current_version
-    response.should be_success        
-  end
+    before do
+      create_dir(@test_dir, nil)
+      create_file(@test_upload_file)
+    end
 
-  it "should display edit page if clicked on edit link for file" do
-    create_file(@test_upload_file)
-    get :edit, :id => path2id(full_path(@test_upload_file)), :version => current_version, :v => current_version
-    response.should be_success        
-  end
+    it "should display confirmation page when clicked on remove for a directory" do
+      get :remove, :id => path2id(full_path(@test_dir)), :version => current_version, :v => current_version
+      response.should be_success    
+    end
 
-  it "should display confirmation page when clicked on remove for a directory" do
-    create_dir(@test_dir, nil)
-    get :remove, :id => path2id(full_path(@test_dir)), :version => current_version, :v => current_version
-    response.should be_success    
-  end
+    it "should display confirmation page when clicked on remove for a file" do
+      get :remove, :id => path2id(full_path(@test_upload_file)), :version => current_version, :v => current_version
+      response.should be_success     
+    end
 
-  it "should rename the directory" do
-    create_dir(@test_dir, nil)
-    rename_asset(@test_dir, @renamed_test_dir)
-    flash[:notice].to_s.should == "Directory has been sucessfully edited." 
-    response.should redirect_to(files_path) 
-  end
+    it "should redirect to index when id is not passed to remove" do
+      get :remove, :id => nil, :version => current_version, :v => current_version
+      flash[:error].to_s.should == error_message(3)
+      response.should redirect_to(files_path)       
 
-  it "should rename the file" do
-    create_file(@test_upload_file)
-    rename_asset(@test_upload_file, @renamed_test_upload_file)
-    flash[:notice].to_s.should == "Filename has been sucessfully edited." 
-    response.should redirect_to(files_path)
+      get :remove, :id => '', :version => current_version, :v => current_version
+      flash[:error].to_s.should == error_message(3)
+      response.should redirect_to(files_path)
+
+      post :remove, :id =>  nil, :version => current_version, :v => current_version
+      flash[:error].to_s.should == error_message(3)
+      response.should redirect_to(files_path)      
+
+      post :remove, :id => '', :version => current_version, :v => current_version
+      flash[:error].to_s.should == error_message(3)
+      response.should redirect_to(files_path)
+    end
+
+    it "should remove the directory when confirmed" do
+      remove_asset(@test_dir)
+      flash[:notice].to_s.should == "The asset was successfully removed."
+      response.should redirect_to(files_path)       
+      Pathname.new(full_path(@test_dir)).should_not be_exist
+    end
+
+    it "should remove the file when confirmed" do
+      remove_asset(@test_upload_file)
+      flash[:notice].to_s.should == "The asset was successfully removed."
+      response.should redirect_to(files_path)       
+      Pathname.new(full_path(@test_upload_file)).should_not be_exist
+    end    
+
+    it "should not allow directory to be deleted if a new directory is added" do
+      initial_version = AssetLock.lock_version
+      create_dir(@second_test_dir, nil)
+      remove_asset(@test_dir, initial_version)
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
+    it "should not allow file to be deleted if a new file is added" do
+      initial_version = AssetLock.lock_version   
+      create_file(@second_test_upload_file)
+      remove_asset(@test_upload_file, initial_version)
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
+    it "should not allow directory to be deleted if another directory has been deleted" do
+      create_dir(@second_test_dir, nil)
+      initial_version = AssetLock.lock_version 
+      remove_asset(@test_dir, initial_version)
+      remove_asset(@second_test_dir, initial_version)
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
+    it "should not allow file to be deleted if another file has been deleted" do
+      create_file(@second_test_upload_file)
+      initial_version = AssetLock.lock_version
+      remove_asset(@test_upload_file, initial_version)
+      remove_asset(@second_test_upload_file, initial_version)   
+      flash[:error].to_s.should == error_message(0)
+      response.should redirect_to(files_path)       
+    end
+
   end
 
   #####
+  #Both the below specs needs to be corrected
+  describe "managing AJAX request" do
 
-  it "should display confirmation page when clicked on remove for a file" do
-    create_file(@test_upload_file)
-    get :remove, :id => path2id(full_path(@test_upload_file)), :version => current_version, :v => current_version
-    response.should be_success     
+    it "should render children via AJAX" do
+      create_dir(@test_dir, nil)
+      xml_http_request :post, :children, :id => path2id(full_path(@test_dir)), :level => '1', :asset_lock => current_version    
+      response.should be_success
+      response.body.should_not have_text('<head>')
+      response.content_type.should == 'text/html'
+      response.charset.should == 'utf-8'
+    end
+
+    it "should render error message via AJAX" do
+      create_dir(@test_dir, nil)
+      xml_http_request :post, :children, :id => path2id(full_path(@test_dir)), :level => '1', :asset_lock => (current_version - 1)   
+      response.should be_success
+      response.body.should_not have_text('<head>')
+      response.content_type.should == 'text/html'
+      response.charset.should == 'utf-8'
+    end
+
   end
-
-  it "should redirect to index when id is not passed to remove" do
-    get :remove, :id => nil, :version => current_version, :v => current_version
-    flash[:error].to_s.should == error_message(3)
-    response.should redirect_to(files_path)       
-
-    get :remove, :id => '', :version => current_version, :v => current_version
-    flash[:error].to_s.should == error_message(3)
-    response.should redirect_to(files_path)
-
-    post :remove, :id =>  nil, :version => current_version, :v => current_version
-    flash[:error].to_s.should == error_message(3)
-    response.should redirect_to(files_path)      
-
-    post :remove, :id => '', :version => current_version, :v => current_version
-    flash[:error].to_s.should == error_message(3)
-    response.should redirect_to(files_path)
-  end
-
-  it "should remove the directory when confirmed" do
-    create_dir(@test_dir, nil)
-    remove_asset(@test_dir)
-    flash[:notice].to_s.should == "The asset was successfully removed."
-    response.should redirect_to(files_path)       
-    Pathname.new(full_path(@test_dir)).should_not be_exist
-  end
-
-  it "should remove the file when confirmed" do
-    create_file(@test_upload_file)
-    remove_asset(@test_upload_file)
-    flash[:notice].to_s.should == "The asset was successfully removed."
-    response.should redirect_to(files_path)       
-    Pathname.new(full_path(@test_upload_file)).should_not be_exist
-  end    
-
-  ####
-
-  it "should not allow directory to be edited if a new directory is added" do
-    create_dir(@test_dir, nil)
-    initial_version = AssetLock.lock_version
-    create_dir(@second_test_dir, nil)
-    rename_asset(@test_dir, @renamed_test_dir, initial_version)
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  it "should not allow filename to be edited if a new file is added" do
-    create_file(@test_upload_file)
-    initial_version = AssetLock.lock_version    
-    create_file(@second_test_upload_file)
-    rename_asset(@test_upload_file, @renamed_test_upload_file, initial_version)
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  it "should not allow directory to be edited if a directory has been removed" do
-    create_dir(@test_dir, nil)
-    create_dir(@second_test_dir, nil)
-    initial_version = AssetLock.lock_version  
-    remove_asset(@second_test_dir) 
-    rename_asset(@test_dir, @renamed_test_dir, initial_version)   
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  it "should not allow filename to be edited if a file has been removed" do
-    create_file(@test_upload_file)
-    create_file(@second_test_upload_file)
-    initial_version = AssetLock.lock_version   
-    remove_asset(@second_test_upload_file)
-    rename_asset(@test_upload_file, @renamed_test_upload_file, initial_version)  
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  ####
-
-  it "should not allow directory to be deleted if a new directory is added" do
-    create_dir(@test_dir, nil)
-    initial_version = AssetLock.lock_version
-    create_dir(@second_test_dir, nil)
-    remove_asset(@test_dir, initial_version)
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  it "should not allow file to be deleted if a new file is added" do
-    create_file(@test_upload_file)
-    initial_version = AssetLock.lock_version   
-    create_file(@second_test_upload_file)
-    remove_asset(@test_upload_file, initial_version)
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  it "should not allow directory to be deleted if another directory has been deleted" do
-    create_dir(@test_dir, nil)
-    create_dir(@second_test_dir, nil)
-    initial_version = AssetLock.lock_version 
-    remove_asset(@test_dir, initial_version)
-    remove_asset(@second_test_dir, initial_version)
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  it "should not allow file to be deleted if another file has been deleted" do
-    create_file(@test_upload_file)
-    create_file(@second_test_upload_file)
-    initial_version = AssetLock.lock_version
-    remove_asset(@test_upload_file, initial_version)
-    remove_asset(@second_test_upload_file, initial_version)   
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  ####
-
-  it "should render children via AJAX" do
-    create_dir(@test_dir, nil)
-    xml_http_request :post, :children, :id => path2id(full_path(@test_dir)), :level => '1'    
-    response.should be_success
-    response.body.should_not have_text('<head>')
-    response.content_type.should == 'text/html'
-    response.charset.should == 'utf-8'
-  end
-
-  it "should show new asset page when Add Child is clicked" do
-    create_dir(@test_dir, nil)
-    parent_id = path2id(full_path(@test_dir))
-    get :new, :parent_id => parent_id, :v => current_version
-    response.should be_success
-  end
-
-  it "should create a child directory within another directory" do
-    create_dir(@test_dir, nil)
-    parent_id = path2id(full_path(@test_dir))
-    post :new, :new_type => 'Directory', :asset => {:directory_name => @second_test_dir, :parent_id => parent_id, :version => current_version}, :v => current_version
-    response.should redirect_to(files_path)
-  end
-
-  it "should not create a child directory if a directory meanwhile has been added" do
-    create_dir(@test_dir, nil)
-    initial_version = AssetLock.lock_version
-    parent_id = path2id(full_path(@test_dir))
-    create_dir(@second_test_dir, nil) 
-    create_dir(@renamed_test_dir, parent_id, initial_version)
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)       
-  end
-
-  it "should not open the Add Child page if an asset is added meanwhile" do
-    create_dir(@test_dir, nil)
-    initial_lock = AssetLock.lock_version
-    create_dir(@second_test_dir, nil) 
-    parent_id = path2id(full_path(@test_dir))
-    get :new, :parent_id => parent_id, :v => initial_lock
-    flash[:error].to_s.should == error_message(0)
-    response.should redirect_to(files_path)      
-  end
-
-  it "should not create a directory if the directory aleady exists" do
-    create_dir(@test_dir, nil)
-    create_dir(@test_dir, nil)    
-    response.should be_success     
-  end
-
-  it "should not create a file if file already exists" do
-    create_file(@test_upload_file)
-    create_file(@test_upload_file)
-    response.should be_success 
-  end
-
 end

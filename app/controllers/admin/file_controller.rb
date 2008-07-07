@@ -21,10 +21,8 @@ class Admin::FileController < ApplicationController
         if @file.save
           redirect_to files_path
         else
-          if @file.errors.no == 0
-             flash[:error] = @file.errors.full_messages.join(", ")
-             redirect_to files_path
-          end 
+          flash[:error] = @file.errors.full_messages.join(", ")          
+          redirect_to files_path if @file.errors.no == 0
         end
       end
     else
@@ -59,10 +57,8 @@ class Admin::FileController < ApplicationController
           flash[:notice] = @file.success
           redirect_to files_path
         else
-          if @file.errors.no == 0
-            flash[:error] = @file.errors.full_messages.join(", ")
-            redirect_to files_path
-          end
+          flash[:error] = @file.errors.full_messages.join(", ")
+          redirect_to files_path if @file.errors.no == 0
         end
    
       end
@@ -80,7 +76,7 @@ class Admin::FileController < ApplicationController
          @assets = Pathname.new(FileBrowserExtension.asset_path) 
          @indent_level = params[:indent_level]
       else
-         @error_message = "The assets have been modified since it was last loaded. Please <a href=''>reload</a> this page."
+         @error_message1 = Asset::Errors::CLIENT_ERRORS[0] + " Please <a href=''>reload</a> this page."
       end
       render :layout => false
     end
