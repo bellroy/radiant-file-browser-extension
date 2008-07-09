@@ -1,125 +1,93 @@
 include DirectoryArray
 
 class Asset
-  attr_reader :parent_id, :version, :pathname, :id
-  attr_accessor :errors, :success
+  include Validatable
+  attr_reader :parent_id, :version, :pathname, :id, :filename
 
-  def initialize(full_path, version)
-    unless full_path.nil?
-      @pathname = Pathname.new(full_path) 
-      @id = path2id(full_path)
-      @version = version
+  validates_each :filename, :logic => lambda {
+    expanded_full_path = File.expand_path(File.join(absolute_path, @filename))
+    if (@filename.slice(0,1) == '.') || @filename.match(/\/|\\/)
+      errors.add(:filename, "contains illegal characters.")
+    elsif expanded_full_path.index(absolute_path) != 0
+      errors.add(:filename, "must not escape from the assets directory.")
     end
-    @errors = Errors.new
-    @success = false
+  }
+
+  def initialize(asset)
+    @filename = asset['name']
+    @parent_id = asset['parent_id']
+    @version = asset['version']
+    @pathname = asset['pathname']
+    @id = asset['id']
   end
 
   def self.find(id, version)
     if AssetLock.confirm_lock(version) and !id.blank? 
       asset_path = id2path(id)
-      Asset.new(asset_path, version)
+      name = asset_path.basename
+      parent_id = path2id(asset_path.parent)
+      Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version)
     else
-      empty_asset = Asset.new(nil, version)
+      empty_asset = Asset.new('version' => version)
       id.blank? ? empty_asset.errors.no = 3 : empty_asset.errors.no = 0
       empty_asset
     end    
   end
 
   def update(asset)
-    asset_name = Asset.confirm_asset_validity_and_sanitize(asset['name'])
-    if asset_name
+    @filename = asset['name']
+    is_success = false
+    if valid?
         if AssetLock.confirm_lock(@version) and !@pathname.nil?
-          new_asset = Pathname.new(File.join(@pathname.parent, asset_name))
-          if @pathname.directory?
-            unless new_asset.directory?
-              @pathname.rename(new_asset)
-              @pathname = Pathname.new(new_asset)
-              @id = path2id(new_asset)
-              @success = "Directory has been sucessfully edited."
-              AssetLock.new_lock_version
-            else
-              @errors.no = 1
-            end
-          elsif @pathname.file?
-            unless new_asset.file?
-              @pathname.rename(new_asset)
-              @pathname = Pathname.new(new_asset)
-              @id = path2id(new_asset)
-              @success = "Filename has been sucessfully edited."
-              AssetLock.new_lock_version
-            else
-              @errors.no = 1
-            end
+          begin
+            new_asset = Pathname.new(File.join(@pathname.parent, @filename))
+            raise "exists" if new_asset.send("#{@pathname.ftype}?")
+            @pathname.rename(new_asset)
+            @pathname = Pathname.new(new_asset)
+            @id = path2id(new_asset)
+            AssetLock.new_lock_version
+            is_success = true
+          rescue RuntimeError => e
+            e.message == 'exists' ? errors.add(:filename, 'already exists.') : errors.add(:filename, 'an unknown error occured.')
           end
         else
-          @errors.no = 0 
+          errors.add(:filename, 'version mismatch.') 
         end
-    else
-      @errors.no = 2 
     end
-    @success
+    is_success
   end
 
   def destroy
     if AssetLock.confirm_lock(@version) and !@id.blank? 
       path = id2path(@id)
-      return false if (path.to_s == Asset.get_absolute_path or path.to_s.index(Asset.get_absolute_path) != 0) #just in case
+      return false if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) #just in case
       if path.directory?
         FileUtils.rm_r path, :force => true
       elsif path.file?
         path.delete
       end
-      @success = true
       AssetLock.new_lock_version         
+    else
+      errors.add(:filename, 'version mismatch.')
     end
-    @success
   end
 
   protected
 
-  def self.get_absolute_path
+  def absolute_path
     FileBrowserExtension.asset_path
   end
 
-  def self.get_upload_location(parent_id)
+  def upload_location(parent_id)
     if parent_id.blank?
-      upload_location = self.get_absolute_path        
+      upload_location = absolute_path        
     else
       upload_location = id2path(parent_id)        
     end
     return upload_location
   end
 
-  def self.confirm_asset_validity_and_sanitize(asset)
-    asset_absolute_path = self.get_absolute_path
-    full_path = File.join(asset_absolute_path, asset)
-    expand_full_path = File.expand_path(full_path)
-    if (asset.slice(0,1) == '.') 
-      return false
-    elsif asset.match(/\/|\\/) 
-      return false
-    elsif expand_full_path.index(asset_absolute_path) != 0
-      return false
-    else
-      asset.gsub! /[^\w\.\-]/, '_'
-      return asset
-    end
-  end
-
   class Errors
-     attr_accessor :no, :count, :full_messages
-
-     def initialize
-        @no = nil
-        @full_messages = []
-        @count = 0
-     end
-
-     def no=(error_no)
-        @no = error_no
-        @full_messages << CLIENT_ERRORS[@no]
-        @count = @count + 1
-     end
 
      CLIENT_ERRORS = [
        "The assets have been modified since it was last loaded hence the requested action could not be performed.",
@@ -127,6 +95,7 @@ class Asset
        "Asset name should not contain / \\ or a leading period.",
        "An error occured when trying to perform the requestion action. Possibly the id field is not provided.",
      ]
+
   end
 
 end

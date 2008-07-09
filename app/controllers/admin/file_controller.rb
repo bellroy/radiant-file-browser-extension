@@ -22,7 +22,7 @@ class Admin::FileController < ApplicationController
           redirect_to files_path
         else
           flash[:error] = @file.errors.full_messages.join(", ")          
-          redirect_to files_path if @file.errors.no == 0
+          redirect_to files_path # if @file.errors.no == 0
         end
       end
     else
@@ -54,11 +54,10 @@ class Admin::FileController < ApplicationController
     unless @file.pathname.nil?
       if request.post?
         if @file.update(params[:asset])
-          flash[:notice] = @file.success
           redirect_to files_path
         else
           flash[:error] = @file.errors.full_messages.join(", ")
-          redirect_to files_path if @file.errors.no == 0
+          redirect_to files_path
         end
    
       end

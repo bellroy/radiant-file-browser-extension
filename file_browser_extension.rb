@@ -1,7 +1,7 @@
 # Uncomment this if you reference any of your controllers in activate
 # require_dependency 'application'
 
-require 'pathname'
+%w[ pathname validatable ].each {|l| require l }
 
 class FileBrowserExtension < Radiant::Extension
   version "0.1"
