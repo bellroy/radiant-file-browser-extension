@@ -4,8 +4,8 @@ def current_version
   AssetLock.lock_version
 end
 
-def error_message(error_no)
-  Asset::Errors::CLIENT_ERRORS[error_no]
+def error_message(err_type)
+  [:modified, :unknown, :blankid].include?(err_type) ? Asset::Errors::CLIENT_ERRORS[err_type] : "Asset name " + Asset::Errors::CLIENT_ERRORS[err_type]
 end
 
 describe FileAsset do
@@ -14,7 +14,7 @@ describe FileAsset do
     @renamed_test_upload_file = 'test_image_new.jpg'
     @second_test_upload_file = 'test_image2.jpg'
     FileUtils.mkdir_p(FileBrowserExtension.asset_path)
-    @file = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version)
+    @file = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version, 'new_type' => 'File')
   end
   after do
     FileUtils.rm_r(FileBrowserExtension.asset_path)
@@ -25,10 +25,10 @@ describe FileAsset do
 
   describe 'filesystem Create' do
     it "should create a file" do
-      file_asset = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version)
-      file_asset.save
-      file_asset.success.should == true
-      Pathname.new(absolute_path(@test_upload_file)).file?.should == true
+      file_asset = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version, 
+'new_type' => 'File')
+      file_asset.save.should_not == nil
+      Pathname.new(absolute_path(@test_upload_file)).file?.should be_true
     end
 
   end
@@ -87,7 +87,7 @@ describe FileAsset do
       @file.stub!(:image?).and_return(true)
       FileAsset.stub!(:public_asset_path).and_return('assets')
       
-      @file.embed_tag.should == "<img src='assets/#{@file.filename}' />"
+      @file.embed_tag.should == "<img src='assets/#{@file.asset_name}' />"
     end
   end
 
@@ -97,22 +97,20 @@ describe FileAsset do
     it "should have an error if contains fullstop characters"
     
     it "should have an error if already in use" do
-      file_asset1 = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version)
+      file_asset1 = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version, 'new_type' => 'File')
       file_asset1.save
-      file_asset2 = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version)
-      file_asset2.save
-      file_asset2.success.should == false
-      file_asset2.errors.full_messages.should == [error_message(1)]
+      file_asset2 = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version, 'new_type' => 'File')
+      file_asset2.save.should == nil
+      file_asset2.errors.full_messages.should == [error_message(:exists)]
     end
   end
 
   describe 'on version mismatch' do
 
     it 'should not upload' do
-      file_asset = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => (current_version + 1))
-      file_asset.save
-      file_asset.success.should == false
-      file_asset.errors.full_messages.should == [error_message(0)] 
+      file_asset = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => (current_version + 1), 'new_type' => 'File')
+      file_asset.save.should == nil
+      file_asset.errors.full_messages.should == [error_message(:modified)] 
       Pathname.new(absolute_path(@test_upload_file)).file?.should == false
     end
     

@@ -5,7 +5,7 @@ describe "/admin/file/edit.rhtml" do
   before(:each) do
     @test_upload_file = 'test_image.jpg'
     FileUtils.mkdir_p(FileBrowserExtension.asset_path)
-    @file = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => AssetLock.lock_version)
+    @file = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => AssetLock.lock_version, 'new_type' => 'File')
     @file.save
  
     assigns[:file] = @file

@@ -38,4 +38,11 @@ module DirectoryArray
     asset_relative_path.nil? ? FileBrowserExtension.asset_path.to_s : File.join(FileBrowserExtension.asset_path.to_s, asset_relative_path)
   end
 
+  def get_parent_id(id)
+    path = id2path(id)    
+    parent_path = path.parent
+    return path2id(parent_path) unless parent_path == absolute_path
+    return nil
+  end
+
 end

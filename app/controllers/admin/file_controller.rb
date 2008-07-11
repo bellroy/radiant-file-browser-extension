@@ -12,7 +12,7 @@ class Admin::FileController < ApplicationController
     params[:v].blank? ? lock_pass = true : lock_pass = AssetLock.confirm_lock(params[:v])
     if lock_pass
       if request.post?
-        if params[:new_type] == 'Directory'
+        if params[:asset][:new_type] == 'Directory'
           @file = DirectoryAsset.new(params[:asset])
         else
           @file = FileAsset.new(params[:asset])
@@ -22,11 +22,11 @@ class Admin::FileController < ApplicationController
           redirect_to files_path
         else
           flash[:error] = @file.errors.full_messages.join(", ")          
-          redirect_to files_path # if @file.errors.no == 0
+          redirect_to files_path  if @file.errors.on(:modified)
         end
       end
     else
-      flash[:error] = Asset::Errors::CLIENT_ERRORS[0]
+      flash[:error] = Asset::Errors::CLIENT_ERRORS[:modified]
       redirect_to files_path
     end
   end
@@ -51,13 +51,14 @@ class Admin::FileController < ApplicationController
   def edit
     @file = Asset.find(params[:id], params[:v])
     
-    unless @file.pathname.nil?
+    if @file.exists?
       if request.post?
         if @file.update(params[:asset])
+          flash[:notice] = "#{@file.class_type.capitalize} has been successfully edited."  
           redirect_to files_path
         else
           flash[:error] = @file.errors.full_messages.join(", ")
-          redirect_to files_path
+          redirect_to files_path  if @file.errors.on(:modified)
         end
    
       end
@@ -75,7 +76,7 @@ class Admin::FileController < ApplicationController
          @assets = Pathname.new(FileBrowserExtension.asset_path) 
          @indent_level = params[:indent_level]
       else
-         @error_message1 = Asset::Errors::CLIENT_ERRORS[0] + " Please <a href=''>reload</a> this page."
+         @error_message = Asset::Errors::CLIENT_ERRORS[:modified] + " Please <a href=''>reload</a> this page."
       end
       render :layout => false
     end

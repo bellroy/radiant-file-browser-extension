@@ -4,7 +4,7 @@ require 'fileutils'
 def get_absolute_root_path
   FileBrowserExtension.asset_path
 end
-
+ 
 def full_path(dirname)
   File.join(get_absolute_root_path, dirname)
 end
@@ -13,24 +13,24 @@ def current_version
   AssetLock.lock_version
 end
 
-def error_message(error_no)
-  Asset::Errors::CLIENT_ERRORS[error_no]
+def error_message(err_type)
+  [:modified, :unknown, :blankid].include?(err_type) ? Asset::Errors::CLIENT_ERRORS[err_type] : "Asset name " + Asset::Errors::CLIENT_ERRORS[err_type]
 end
 
 def create_dir(dirname, parent_id, version=current_version)
-  post :new, :new_type => 'Directory', :asset => {:directory_name => dirname, :parent_id => parent_id, :version => version}, :v => current_version
+  post :new, :asset => {:name => dirname, :parent_id => parent_id, :new_type => 'Directory', :version => version}, :v => version
 end
 
 def create_file(filename, parent_id=nil)
-  post :new, :new_type => 'Upload', :asset => {:uploaded_data => fixture_file_upload(filename, "image/jpg"), :parent_id => parent_id, :version => current_version}, :v => current_version
+  post :new, :asset => {:uploaded_data => fixture_file_upload(filename, "image/jpg"), :parent_id => parent_id, :new_type => 'File', :version => current_version}, :v => current_version
 end
 
 def rename_asset(oldname, newname, version=current_version)
-  post :edit, :id => path2id(full_path(oldname)), :asset => {:name => newname, :version => version}, :v => version
+  post :edit, :id => path2id(full_path(oldname)), :asset => {:name => newname}, :v => version
 end
 
 def remove_asset(assetname, version=current_version)
-  post :remove, :id => path2id(full_path(assetname)), :version => version, :v => version
+  post :remove, :id => path2id(full_path(assetname)), :v => version
 end
 
 
@@ -51,7 +51,7 @@ describe Admin::FileController do
     FileUtils.rm_r(FileBrowserExtension.asset_path)
   end
 
-  before :each do
+  before :each do 
     login_as :admin
   end
 
@@ -95,7 +95,7 @@ describe Admin::FileController do
     it "should create a child directory within another directory" do
       create_dir(@test_dir, nil)
       parent_id = path2id(full_path(@test_dir))
-      post :new, :new_type => 'Directory', :asset => {:directory_name => @second_test_dir, :parent_id => parent_id, :version => current_version}, :v => current_version
+      post :new, :asset => {:name => @second_test_dir, :parent_id => parent_id, :version => current_version, :new_type => 'Directory'}, :v => current_version
       response.should redirect_to(files_path)
     end
 
@@ -105,7 +105,7 @@ describe Admin::FileController do
       parent_id = path2id(full_path(@test_dir))
       create_dir(@second_test_dir, nil) 
       create_dir(@renamed_test_dir, parent_id, initial_version)
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
     it "should not create a child directory if a file meanwhile has been added" 
@@ -120,7 +120,7 @@ describe Admin::FileController do
       create_dir(@second_test_dir, nil) 
       parent_id = path2id(full_path(@test_dir))
       get :new, :parent_id => parent_id, :v => initial_lock
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)      
     end
     it "should not open the Add Child page if a file meanwhile has been added" 
@@ -132,16 +132,20 @@ describe Admin::FileController do
     it "should not create a directory if the directory aleady exists" do
       create_dir(@test_dir, nil)
       create_dir(@test_dir, nil)    
-      flash[:error].to_s.should == error_message(1)
+      flash[:error].to_s.should == error_message(:exists)
       response.should be_success     
     end
+
+    it "should not create a child directory if the child directory already exists"
 
     it "should not create a file if file already exists" do
       create_file(@test_upload_file)
       create_file(@test_upload_file)
-      flash[:error].to_s.should == error_message(1)
+      flash[:error].to_s.should == error_message(:exists)
       response.should be_success 
     end
+
+    it "should not create a child file if child file already exists"
 
   end
 
@@ -165,13 +169,13 @@ describe Admin::FileController do
 
     it "should rename the directory" do
       rename_asset(@test_dir, @renamed_test_dir)
-      flash[:notice].to_s.should == "Directory has been sucessfully edited." 
+      flash[:notice].to_s.should == "Directory has been successfully edited." 
       response.should redirect_to(files_path) 
     end
 
     it "should rename the file" do
       rename_asset(@test_upload_file, @renamed_test_upload_file)
-      flash[:notice].to_s.should == "Filename has been sucessfully edited." 
+      flash[:notice].to_s.should == "File has been successfully edited." 
       response.should redirect_to(files_path)
     end
 
@@ -179,7 +183,7 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version
       create_dir(@second_test_dir, nil)
       rename_asset(@test_dir, @renamed_test_dir, initial_version)
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 
@@ -187,7 +191,7 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version    
       create_file(@second_test_upload_file)
       rename_asset(@test_upload_file, @renamed_test_upload_file, initial_version)
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 
@@ -196,7 +200,7 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version  
       remove_asset(@second_test_dir) 
       rename_asset(@test_dir, @renamed_test_dir, initial_version)   
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 
@@ -205,23 +209,27 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version   
       remove_asset(@second_test_upload_file)
       rename_asset(@test_upload_file, @renamed_test_upload_file, initial_version)  
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 
     it "should not allow directory to be renamed to an existing directory name" do
       create_dir(@second_test_dir, nil)
       rename_asset(@test_dir, @second_test_dir, current_version)   
-      flash[:error].to_s.should == error_message(1)
+      flash[:error].to_s.should == error_message(:exists)
       response.should be_success      
     end
+
+    it "should not allow child directory to be renamed to an existing child directory name"
 
     it "should not allow file to be renamed to an existing filename" do
       create_file(@second_test_upload_file)
       rename_asset(@test_upload_file, @second_test_upload_file, current_version) 
-      flash[:error].to_s.should == error_message(1)
+      flash[:error].to_s.should == error_message(:exists)
       response.should be_success    
     end
+
+    it "should not allow child file to be renamed to an existing child filename"
  
   end
 
@@ -244,19 +252,19 @@ describe Admin::FileController do
 
     it "should redirect to index when id is not passed to remove" do
       get :remove, :id => nil, :version => current_version, :v => current_version
-      flash[:error].to_s.should == error_message(3)
+      flash[:error].to_s.should == error_message(:blankid)
       response.should redirect_to(files_path)       
 
       get :remove, :id => '', :version => current_version, :v => current_version
-      flash[:error].to_s.should == error_message(3)
+      flash[:error].to_s.should == error_message(:blankid)
       response.should redirect_to(files_path)
 
       post :remove, :id =>  nil, :version => current_version, :v => current_version
-      flash[:error].to_s.should == error_message(3)
+      flash[:error].to_s.should == error_message(:blankid)
       response.should redirect_to(files_path)      
 
       post :remove, :id => '', :version => current_version, :v => current_version
-      flash[:error].to_s.should == error_message(3)
+      flash[:error].to_s.should == error_message(:blankid)
       response.should redirect_to(files_path)
     end
 
@@ -278,7 +286,7 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version
       create_dir(@second_test_dir, nil)
       remove_asset(@test_dir, initial_version)
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 
@@ -286,7 +294,7 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version   
       create_file(@second_test_upload_file)
       remove_asset(@test_upload_file, initial_version)
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 
@@ -295,7 +303,7 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version 
       remove_asset(@test_dir, initial_version)
       remove_asset(@second_test_dir, initial_version)
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 
@@ -304,7 +312,7 @@ describe Admin::FileController do
       initial_version = AssetLock.lock_version
       remove_asset(@test_upload_file, initial_version)
       remove_asset(@second_test_upload_file, initial_version)   
-      flash[:error].to_s.should == error_message(0)
+      flash[:error].to_s.should == error_message(:modified)
       response.should redirect_to(files_path)       
     end
 

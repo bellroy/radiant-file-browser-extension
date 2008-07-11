@@ -24,7 +24,7 @@ describe "/admin/file/new.rhtml" do
 
   it "should render add child page" do
     @test_dir = 'Test1' 
-    @dir_asset = DirectoryAsset.new('directory_name' => @test_dir, 'parent_id' => nil, 'version' => current_version)
+    @dir_asset = DirectoryAsset.new('name' => @test_dir, 'parent_id' => nil, 'version' => current_version, 'new_type' => 'Directory')
     @dir_asset.save
     assigns[:parent_id] = @dir_asset.id
     render "/admin/file/new.rhtml"        

@@ -2,74 +2,87 @@ include DirectoryArray
 
 class Asset
   include Validatable
-  attr_reader :parent_id, :version, :pathname, :id, :filename
+  attr_reader :parent_id, :version, :pathname, :id, :asset_name, :class_type
 
-  validates_each :filename, :logic => lambda {
-    expanded_full_path = File.expand_path(File.join(absolute_path, @filename))
-    if (@filename.slice(0,1) == '.') || @filename.match(/\/|\\/)
-      errors.add(:filename, "contains illegal characters.")
+  validates_each :asset_name, :logic => lambda {
+    expanded_full_path = File.expand_path(File.join(upload_location(@parent_id), @asset_name))  
+    if @asset_name.blank?
+      errors.add(:asset_name, Errors::CLIENT_ERRORS[:blankname])
+    elsif (@asset_name.slice(0,1) == '.') || @asset_name.match(/\/|\\/)
+      errors.add(:asset_name, Errors::CLIENT_ERRORS[:illegal_name])
     elsif expanded_full_path.index(absolute_path) != 0
-      errors.add(:filename, "must not escape from the assets directory.")
+      errors.add(:asset_name, Errors::CLIENT_ERRORS[:illegal_path])
+    elsif Pathname.new(expanded_full_path).send("#{@class_type}?") 
+      errors.add(:asset_name, Errors::CLIENT_ERRORS[:exists])    
     end
   }
 
   def initialize(asset)
-    @filename = asset['name']
+    @asset_name = sanitize(asset['name'])
     @parent_id = asset['parent_id']
     @version = asset['version']
     @pathname = asset['pathname']
     @id = asset['id']
+    @class_type = asset['new_type'].downcase
   end
 
   def self.find(id, version)
     if AssetLock.confirm_lock(version) and !id.blank? 
       asset_path = id2path(id)
-      name = asset_path.basename
+      name = asset_path.basename.to_s
       parent_id = path2id(asset_path.parent)
-      Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version)
-    else
-      empty_asset = Asset.new('version' => version)
-      id.blank? ? empty_asset.errors.no = 3 : empty_asset.errors.no = 0
-      empty_asset
+      class_type = asset_path.ftype
+      Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version, 'new_type' => class_type)
+    else     
+      empty_asset = Asset.new('name' => '', 'pathname' => nil, 'new_type' => '')
+      id.blank? ? err_type = :blankid : err_type = :modified
+      empty_asset.errors.add(:base, Errors::CLIENT_ERRORS[err_type])      
+      empty_asset       
     end    
   end
 
   def update(asset)
-    @filename = asset['name']
-    is_success = false
+    @asset_name = sanitize(asset['name'])
     if valid?
-        if AssetLock.confirm_lock(@version) and !@pathname.nil?
-          begin
-            new_asset = Pathname.new(File.join(@pathname.parent, @filename))
-            raise "exists" if new_asset.send("#{@pathname.ftype}?")
-            @pathname.rename(new_asset)
-            @pathname = Pathname.new(new_asset)
-            @id = path2id(new_asset)
-            AssetLock.new_lock_version
-            is_success = true
-          rescue RuntimeError => e
-            e.message == 'exists' ? errors.add(:filename, 'already exists.') : errors.add(:filename, 'an unknown error occured.')
-          end
-        else
-          errors.add(:filename, 'version mismatch.') 
-        end
+      begin
+        raise Errors, :modified unless Asset.find(@id, @version).exists? 
+        new_asset = Pathname.new(File.join(@pathname.parent, @asset_name))
+        @pathname.rename(new_asset)
+        @pathname = Pathname.new(new_asset)
+        @id = path2id(new_asset)
+        @version = AssetLock.new_lock_version
+        @parent_id = get_parent_id(@id)
+        return true
+      rescue Errors => e
+        add_error(e)
+        return false 
+      end
     end
-    is_success
   end
 
   def destroy
-    if AssetLock.confirm_lock(@version) and !@id.blank? 
       path = id2path(@id)
-      return false if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) #just in case
+      raise Errors, :illegal_path if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) #just in case
+      raise Errors, :modified unless Asset.find(@id, @version).exists? 
       if path.directory?
         FileUtils.rm_r path, :force => true
       elsif path.file?
         path.delete
       end
       AssetLock.new_lock_version         
-    else
-      errors.add(:filename, 'version mismatch.')
-    end
+      return true
+    rescue Errors => e 
+      add_error(e)
+      return false
+  end
+
+  def exists?
+    @pathname.nil? ? false : true
+  end
+
+  def sanitize(asset_name)
+    asset_name.gsub! /[^\w\.\-]/, '_'
+    return asset_name
   end
 
   protected
@@ -87,14 +100,32 @@ class Asset
     return upload_location
   end
 
-  class Errors
+  def add_error(e)
+    case e.message
+      when :exists
+        errors.add(:asset_name, Errors::CLIENT_ERRORS[e.message])
+      when :modified
+        errors.add(:base, Errors::CLIENT_ERRORS[e.message])
+      when :illegal_path
+        errors.add(:asset_name, Errors::CLIENT_ERRORS[e.message])
+      when :illegal_name
+        errors.add(:asset_name, Errors::CLIENT_ERRORS[e.message])
+      else
+        errors.add(:base, :unknown)
+    end
+  end
 
-     CLIENT_ERRORS = [
-       "The assets have been modified since it was last loaded hence the requested action could not be performed.",
-       "The Asset name you are trying to create/edit already exists hence the requested action could not be performed.",
-       "Asset name should not contain / \\ or a leading period.",
-       "An error occured when trying to perform the requestion action. Possibly the id field is not provided.",
-     ]
+  class Errors < StandardError
+
+    CLIENT_ERRORS = {
+       :modified => "The Assets have been changed since it was last loaded hence the requested action could not be performed.",
+       :exists => "already exists.",
+       :illegal_name => "contains illegal characters.",
+       :illegal_path => "must not escape from the assets directory.",
+       :unknown => "An unknown error occured.",
+       :blankid => "An error occured due to id field being blank.",
+       :blankname => "field cannot be blank",
+    }
 
   end
 

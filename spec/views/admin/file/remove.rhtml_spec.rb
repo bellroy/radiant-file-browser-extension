@@ -10,7 +10,7 @@ describe "/admin/file/remove.rhtml" do
       @test_dir = 'Test1' 
       FileUtils.mkdir_p(FileBrowserExtension.asset_path)
 
-      @dir_asset = DirectoryAsset.new('directory_name' => @test_dir, 'parent_id' => nil, 'version' => current_version)
+      @dir_asset = DirectoryAsset.new('name' => @test_dir, 'parent_id' => nil, 'version' => current_version, 'new_type' => 'Directory')
       @dir_asset.save
 
       assigns[:id] = @dir_asset.id

@@ -3,18 +3,26 @@ class FileAsset < Asset
 
   def initialize(asset)
     @uploaded_data = asset['uploaded_data']
-    super('name' => @uploaded_data.original_filename, 'parent_id' => asset['parent_id'], 'version' => asset['version'])
+    filename = @uploaded_data.blank? ? '' : @uploaded_data.original_filename
+    super('name' => filename, 'parent_id' => asset['parent_id'], 'version' => asset['version'], 'new_type' => asset['new_type'])
   end
 
   def save
     if valid?
-      upload_location = upload_location(@parent_id)
-      new_file = Pathname.new(File.join(upload_location, @filename))
-      File.open(new_file, 'wb') { |f| f.write(@uploaded_data.read) }
-      @id = path2id(new_file)
-      @pathname = new_file
-      @version = AssetLock.new_lock_version
+      begin
+        raise Errors, :modified unless AssetLock.confirm_lock(@version)
+        upload_location = upload_location(@parent_id)
+        new_file = Pathname.new(File.join(upload_location, @asset_name))
+        raise Errors, :modified unless AssetLock.confirm_lock(@version)
+        File.open(new_file, 'wb') { |f| f.write(@uploaded_data.read) }
+        @id = path2id(new_file)
+        @pathname = new_file
+        @version = AssetLock.new_lock_version
+      rescue Errors => e
+        add_error(e)
+      end
     end
+    @id
   end
 
   def extension 
@@ -31,9 +39,9 @@ class FileAsset < Asset
   def embed_tag
     asset_path = FileAsset.public_asset_path
     if image?
-      return "<img src='#{asset_path}/#{@filename}' />"
+      return "<img src='#{asset_path}/#{@asset_name}' />"
     else
-      return "<a href='#{asset_path}/#{@filename}'>#{@filename.capitalize}</a>"
+      return "<a href='#{asset_path}/#{@asset_name}'>#{@asset_name.capitalize}</a>"
     end
   end
 

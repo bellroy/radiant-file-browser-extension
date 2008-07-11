@@ -4,8 +4,8 @@ def current_version
   AssetLock.lock_version
 end
 
-def error_message(error_no)
-  Asset::Errors::CLIENT_ERRORS[error_no]
+def error_message(err_type)
+  [:modified, :unknown, :blankid].include?(err_type) ? Asset::Errors::CLIENT_ERRORS[err_type] : "Asset name " + Asset::Errors::CLIENT_ERRORS[err_type]
 end
 
 describe Asset do
@@ -20,10 +20,10 @@ describe Asset do
     @second_test_upload_file = 'test_image2.jpg'
 
     FileUtils.mkdir_p(FileBrowserExtension.asset_path)
-    @dir = DirectoryAsset.new('directory_name' => @test_dir, 'parent_id' => nil, 'version' => current_version)
+    @dir = DirectoryAsset.new('name' => @test_dir, 'parent_id' => nil, 'version' => current_version, 'new_type' => 'Directory')
     @dir.save
 
-    @file = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version)
+    @file = FileAsset.new('uploaded_data' => fixture_file_upload(@test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version, 'new_type' => 'File')
     @file.save
   end
 
@@ -40,7 +40,7 @@ describe Asset do
     it "should not find a directory if version does not match and provide an asset error with error no. 0" do
       asset = Asset.find(@dir.id, (current_version + 1))
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should == [error_message(:modified)]
     end
     
     it "should find a file if id and version matches" do
@@ -50,37 +50,37 @@ describe Asset do
     it "should not find a file if version does not match and provide an asset error with error no. 0" do
       asset = Asset.find(@file.id, (current_version + 1))
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should == [error_message(:modified)]
     end
 
     it "should not find a directory if version parameter is not sent and provide an asset error with error no. 0" do
       asset = Asset.find(@dir.id, nil)
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should == [error_message(:modified)]
 
       asset = Asset.find(@dir.id, '')
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should == [error_message(:modified)]
     end
 
     it "should not find a file if version parameter is not sent and provide an asset error with error no. 0" do
       asset = Asset.find(@file.id, nil)
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should == [error_message(:modified)]
 
       asset = Asset.find(@file.id, '')
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should == [error_message(:modified)]
     end
 
     it "should provide asset error with error no. 3 if id parameter is not sent" do
       asset = Asset.find(nil, current_version)
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(3)]
+      asset.errors.full_messages.should == [error_message(:blankid)]
 
       asset = Asset.find(' ', current_version)
       asset.pathname.should == nil
-      asset.errors.full_messages.should == [error_message(3)]
+      asset.errors.full_messages.should == [error_message(:blankid)]
     end
 
   end
@@ -101,21 +101,21 @@ describe Asset do
     end
 
     it "should not edit the name of a directory if directory name already exists and provide an asset error with error no. 1" do
-      DirectoryAsset.new('directory_name' => @second_test_dir, 'parent_id' => nil, 'version' => current_version).save
+      DirectoryAsset.new('name' => @second_test_dir, 'parent_id' => nil, 'version' => current_version, 'new_type' => 'Directory').save
       asset = Asset.find(@dir.id, current_version)
       asset.update('name' => @second_test_dir, 'version' => current_version)
       asset.pathname.should == Pathname.new(absolute_path(@test_dir))
       Pathname.new(absolute_path(@test_dir)).directory?.should == true
-      asset.errors.full_messages.should == [error_message(1)]
+      asset.errors.full_messages.should == [error_message(:exists)]
     end
 
     it "should not edit the name of a file if file name already exists and provide an asset error with error no. 1" do
-      FileAsset.new('uploaded_data' => fixture_file_upload(@second_test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version).save
+      FileAsset.new('uploaded_data' => fixture_file_upload(@second_test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version, 'new_type' => 'File').save
       asset = Asset.find(@file.id, current_version)
       asset.update('name' => @second_test_upload_file, 'version' => current_version)
       asset.pathname.should == Pathname.new(absolute_path(@test_upload_file))
       Pathname.new(absolute_path(@test_upload_file)).file?.should == true
-      asset.errors.full_messages.should == [error_message(1)]
+      asset.errors.full_messages.should == [error_message(:exists)]
     end
 
     fixture = [
@@ -130,7 +130,7 @@ describe Asset do
         asset.update('name' => name, 'version' => current_version)
         asset.pathname.should == Pathname.new(absolute_path(@test_dir))
         Pathname.new(absolute_path(@test_dir)).directory?.should == true
-        asset.errors.full_messages.should == [error_message(2)]
+        asset.errors.full_messages.should == [error_message(:illegal_name)]
       end
 
       it "should not edit a file if filename consists of #{consists} and provide an asset error with error no. 2" do
@@ -138,7 +138,7 @@ describe Asset do
        asset.update('name' => name + '.jpg', 'version' => current_version)
        asset.pathname.should == Pathname.new(absolute_path(@test_upload_file))
        Pathname.new(absolute_path(@test_upload_file)).file?.should == true
-       asset.errors.full_messages.should == [error_message(2)]
+       asset.errors.full_messages.should == [error_message(:illegal_name)]
       end
     end
 
@@ -146,14 +146,14 @@ describe Asset do
       asset = Asset.find(@dir.id, (current_version + 1))
       asset.update('name' => @second_test_dir)
       Pathname.new(absolute_path(@test_dir)).directory?.should == true
-      asset.errors.full_messages.should include(error_message(0))
+      asset.errors.full_messages.should include(error_message(:modified))
     end
 
     it "should not edit a file if version mismatch occurs and provide an asset error with error no. 0" do
       asset = Asset.find(@file.id, (current_version + 1))
       asset.update('name' => @second_test_upload_file)
       Pathname.new(absolute_path(@test_upload_file)).file?.should == true
-      asset.errors.full_messages.should include(error_message(0))
+      asset.errors.full_messages.should include(error_message(:modified))
     end
 
   end
@@ -177,14 +177,14 @@ describe Asset do
       asset = Asset.find(@dir.id, current_version + 1)
       asset.destroy.should == false
       Pathname.new(absolute_path(@test_dir)).directory?.should == true
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should include(error_message(:modified))
     end
     
     it "should not remove a file if version mismatch occurs" do
       asset = Asset.find(@file.id, current_version + 1)
       asset.destroy.should == false
       Pathname.new(absolute_path(@test_upload_file)).file?.should == true
-      asset.errors.full_messages.should == [error_message(0)]
+      asset.errors.full_messages.should include(error_message(:modified))
     end
 
   end
@@ -192,33 +192,13 @@ describe Asset do
 
   describe "protected methods" do
 
-    it "should get the absolute root path" do
-      DirectoryAsset.get_absolute_path.should == FileBrowserExtension.asset_path
-    end
+    it "should get the absolute root path" 
 
-    it "should get the absolute upload location for a parent" do
-      upload_location = DirectoryAsset.get_upload_location(@dir.id)
-      upload_location.should == id2path(@dir.id)  
+    it "should get the absolute upload location for a parent" 
 
-      upload_location = DirectoryAsset.get_upload_location(nil)
-      upload_location.should == FileBrowserExtension.asset_path
-    end
+    it "should confirm the validity of the asset name" 
 
-    it "should confirm the validity of the asset name" do
-      asset_name = '.TT'
-      DirectoryAsset.confirm_asset_validity_and_sanitize(asset_name).should == false
-
-      asset_name = 'TT/NN'
-      DirectoryAsset.confirm_asset_validity_and_sanitize(asset_name).should == false
-
-      asset_name = 'TT\\NN'
-      DirectoryAsset.confirm_asset_validity_and_sanitize(asset_name).should == false
-    end
-
-    it "should sanitize asset name by converting all special chars except ., / and \\ into an underscore" do
-      asset_name = 'TT$NN^B*A`~\'"Y'
-      DirectoryAsset.confirm_asset_validity_and_sanitize(asset_name).should == 'TT_NN_B_A____Y'
-    end
+    it "should sanitize asset name by converting all special chars except ., / and \\ into an underscore" 
 
   end
 

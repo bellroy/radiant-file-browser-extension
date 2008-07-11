@@ -1,6 +1,6 @@
 <h1>New Asset</h1>
 <% form_tag "", :multipart => true do %>
-  <input type="hidden" name="new_type" value="Upload" />
+  <input type="hidden" name="asset[new_type]" value="File" />
   <input type='hidden' name='asset[version]' value='<%= @asset_lock %>' />
   <table class="fieldset">
     <tbody>
@@ -23,7 +23,7 @@
 <h2>OR</h2>
 
 <% form_tag "" do %>  
-  <input type="hidden" name="new_type" value="Directory" />
+  <input type="hidden" name="asset[new_type]" value="Directory" />
   <input type='hidden' name='asset[version]' value='<%= @asset_lock %>' />
   <table class="fieldset">
     <tbody>
