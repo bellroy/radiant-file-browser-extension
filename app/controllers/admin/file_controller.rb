@@ -2,7 +2,7 @@ class Admin::FileController < ApplicationController
   include DirectoryArray
   
   def index
-    @assets = Pathname.new(FileBrowserExtension.asset_path)
+    @assets = Asset.find(:root)
     @asset_lock = AssetLock.lock_version
   end
   
@@ -71,13 +71,10 @@ class Admin::FileController < ApplicationController
   def children
     if request.xhr?
       @asset_lock = params[:asset_lock]  
-      if AssetLock.confirm_lock(@asset_lock)
-         @id = params[:id]
-         @assets = Pathname.new(FileBrowserExtension.asset_path) 
-         @indent_level = params[:indent_level]
-      else
-         @error_message = Asset::Errors::CLIENT_ERRORS[:modified] + " Please <a href=''>reload</a> this page."
-      end
+      @id = params[:id]
+      @assets = Asset.find(@id, @asset_lock)
+      @indent_level = params[:indent_level].to_i
+      @error_message = Asset::Errors::CLIENT_ERRORS[:modified] + " Please <a href=''>reload</a> this page." unless @assets.exists?                 
       render :layout => false
     end
   end       

@@ -13,7 +13,7 @@
   </thead>
   <tbody>
 <% if @assets -%>
-<%= render_children(@assets, '', 0, false, false, @asset_lock) -%>
+  <%= render_children(@assets, {:expanded => true}) -%>
 <% else -%>
   <tr>
     <td colspan="6" class="note">No Files</td>

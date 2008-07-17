@@ -26,13 +26,17 @@ class Asset
     @class_type = asset['new_type'].downcase
   end
 
-  def self.find(id, version)
+  def self.find(*args)
+    case args.first
+      when :root then find_by_pathname(Pathname.new(absolute_path))
+      else find_from_id(args[0], args[1])
+    end
+  end
+
+  def self.find_from_id(id, version)
     if AssetLock.confirm_lock(version) and !id.blank? 
       asset_path = id2path(id)
-      name = asset_path.basename.to_s
-      parent_id = path2id(asset_path.parent)
-      class_type = asset_path.ftype
-      Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version, 'new_type' => class_type)
+      find_by_pathname(asset_path)
     else     
       empty_asset = Asset.new('name' => '', 'pathname' => nil, 'new_type' => '')
       id.blank? ? err_type = :blankid : err_type = :modified
@@ -85,7 +89,51 @@ class Asset
     return asset_name
   end
 
+  def children
+    @class_type == 'directory' ? @pathname.children.map { |c| Asset.find_by_pathname(c) }.compact : []
+  end
+
+  def extension 
+    ext = @pathname.extname
+    ext.slice(1, ext.length) if ext.slice(0,1) == '.'
+  end
+
+  def image?
+    ext = extension.downcase unless extension.nil?
+    return true if %w[png jpg jpeg bmp gif].include?(ext)
+    return false 
+  end  
+
+  def embed_tag
+    asset_path = FileAsset.public_asset_path
+    if image?
+      return "<img src='#{asset_path}/#{@asset_name}' />"
+    else
+      return "<a href='#{asset_path}/#{@asset_name}'>#{@asset_name.capitalize}</a>"
+    end
+  end
+
+  def self.public_asset_path
+    asset_parent_path = Pathname.new(FileBrowserExtension.asset_parent_path)
+    asset_root = Pathname.new(FileBrowserExtension.asset_path)
+    asset_root.relative_path_from(asset_parent_path)     
+  end
+
+  def description
+    return "Folder" if @class_type == 'directory'
+    return image? ? "Image" : "File"
+  end
+
   protected
+
+  def self.find_by_pathname(asset_path)
+    name = asset_path.basename.to_s
+    return nil if name =~ (/^\./)  
+    parent_id = path2id(asset_path.parent)
+    class_type = asset_path.ftype  
+    id = path2id(asset_path)  
+    Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => AssetLock.version, 'new_type' => class_type)
+  end
 
   def absolute_path
     FileBrowserExtension.asset_path

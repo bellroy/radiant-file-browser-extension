@@ -25,30 +25,4 @@ class FileAsset < Asset
     @id
   end
 
-  def extension 
-    ext = @pathname.extname
-    ext.slice(1, ext.length) if ext.slice(0,1) == '.'
-  end
-
-  def image?
-    ext = extension.downcase
-    return true if %w[png jpg jpeg bmp gif].include?(ext)
-    return false 
-  end  
-
-  def embed_tag
-    asset_path = FileAsset.public_asset_path
-    if image?
-      return "<img src='#{asset_path}/#{@asset_name}' />"
-    else
-      return "<a href='#{asset_path}/#{@asset_name}'>#{@asset_name.capitalize}</a>"
-    end
-  end
-
-  def self.public_asset_path
-    asset_parent_path = Pathname.new(FileBrowserExtension.asset_parent_path)
-    asset_root = Pathname.new(FileBrowserExtension.asset_path)
-    asset_root.relative_path_from(asset_parent_path)     
-  end
-
 end
