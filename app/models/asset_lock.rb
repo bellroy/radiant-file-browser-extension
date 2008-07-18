@@ -9,10 +9,6 @@ class AssetLock < ActiveRecord::Base
     version.version
   end
 
-  def self.version
-    version = find(:first) || create(:version => 0)
-  end
-
   def self.confirm_lock(version)
     return false if (version.nil? or version.to_s.strip == '')
     current_version = AssetLock.lock_version
@@ -21,6 +17,12 @@ class AssetLock < ActiveRecord::Base
     else
       return false
     end
+  end
+
+  private
+
+  def self.version
+    version = find(:first) || create(:version => 0)
   end
 
 end

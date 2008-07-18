@@ -118,27 +118,33 @@ describe Asset do
       asset.errors.full_messages.should == [error_message(:exists)]
     end
 
-    fixture = [
-        #consists                 assetname
-        ['leading period',       '.testfile'],
-        ['/',                    'test/file'],  
-        ['\\',                   'test\\file'],
-    ]
-    fixture.each do |consists, name|
-      it "should not edit a directory if directory name consists of #{consists} and provide an asset error with error no. 2" do
+    it "should not edit directory if directory name consists of a leading period" do
         asset = Asset.find(@dir.id, current_version)
-        asset.update('name' => name, 'version' => current_version)
+        asset.update('name' => '.testfile', 'version' => current_version)
         asset.pathname.should == Pathname.new(absolute_path(@test_dir))
         Pathname.new(absolute_path(@test_dir)).directory?.should == true
         asset.errors.full_messages.should == [error_message(:illegal_name)]
+    end
+
+    fixture = [
+        #consists                 assetname          sanitized 
+        ['^ and "',             'test^fi"le',      'test_fi_le'],
+        ['/',                    'test/file',        'test_file'],  
+        ['\\',                   'test\\file',       'test_file'],
+    ]
+    fixture.each do |consists, name, sanitized|
+      it "should sanitize directory name if it contains special characters" do
+        asset = Asset.find(@dir.id, current_version)
+        asset.update('name' => name, 'version' => current_version)
+        asset.pathname.should == Pathname.new(absolute_path(sanitized))
+        Pathname.new(absolute_path(sanitized)).directory?.should == true
       end
 
-      it "should not edit a file if filename consists of #{consists} and provide an asset error with error no. 2" do
+      it "should sanitize file name if it contains special characters" do
        asset = Asset.find(@file.id, current_version)
-       asset.update('name' => name + '.jpg', 'version' => current_version)
-       asset.pathname.should == Pathname.new(absolute_path(@test_upload_file))
-       Pathname.new(absolute_path(@test_upload_file)).file?.should == true
-       asset.errors.full_messages.should == [error_message(:illegal_name)]
+       asset.update('name' => name, 'version' => current_version)
+       asset.pathname.should == Pathname.new(absolute_path(sanitized))
+       Pathname.new(absolute_path(sanitized)).file?.should == true
       end
     end
 

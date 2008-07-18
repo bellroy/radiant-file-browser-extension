@@ -41,18 +41,25 @@ describe DirectoryAsset do
       Pathname.new(absolute_path(File.join(@test_dir, 'ChildDir'))).directory?.should == true      
     end
 
+    it "should not create a directory if it contains a leading period" do
+      dir_asset = DirectoryAsset.new('name' => '.AbcPqr', 'parent_id' => nil, 'version' => current_version, 'new_type' => 'Directory')
+      dir_asset.save.should == nil
+      dir_asset.errors.full_messages.should == [error_message(:illegal_name)]
+    end
+
     fixture = [
-      #consists                 assetname
-      ['leading period',       '.AbcPqr'],
-      ['/',                    'Abc/Pqr'],  
-      ['\\',                   'Abc/Pqr\\Xyz'],
+      #consists                 assetname           sanitized
+      ['^ and &',              'Abc^Pqr&Xyz',     'Abc_Pqr_Xyz'],
+      ['/',                    'Abc/Pqr',         'Abc_Pqr'],  
+      ['\\',                   'Abc/Pqr\\Xyz',    'Abc_Pqr_Xyz'],
     ]
 
-    fixture.each do |consists, name|
-      it "should not create a directory if it contains #{consists} " do
+    fixture.each do |consists, name, sanitized_name|
+      it "should sanitize directory names when it contains special chars (consists #{consists})" do
         dir_asset = DirectoryAsset.new('name' => name, 'parent_id' => nil, 'version' => current_version, 'new_type' => 'Directory')
-        dir_asset.save.should == nil
-        dir_asset.errors.full_messages.should == [error_message(:illegal_name)]
+        dir_asset.save
+        id = dir_asset.id
+        id2path(id).basename.to_s.should == sanitized_name
       end
     end
    

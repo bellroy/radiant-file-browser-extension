@@ -26,25 +26,6 @@ class Asset
     @class_type = asset['new_type'].downcase
   end
 
-  def self.find(*args)
-    case args.first
-      when :root then find_by_pathname(Pathname.new(absolute_path))
-      else find_from_id(args[0], args[1])
-    end
-  end
-
-  def self.find_from_id(id, version)
-    if AssetLock.confirm_lock(version) and !id.blank? 
-      asset_path = id2path(id)
-      find_by_pathname(asset_path)
-    else     
-      empty_asset = Asset.new('name' => '', 'pathname' => nil, 'new_type' => '')
-      id.blank? ? err_type = :blankid : err_type = :modified
-      empty_asset.errors.add(:base, Errors::CLIENT_ERRORS[err_type])      
-      empty_asset       
-    end    
-  end
-
   def update(asset)
     @asset_name = sanitize(asset['name'])
     if valid?
@@ -66,7 +47,7 @@ class Asset
 
   def destroy
       path = id2path(@id)
-      raise Errors, :illegal_path if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) #just in case
+      raise Errors, :illegal_path if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) 
       raise Errors, :modified unless Asset.find(@id, @version).exists? 
       if path.directory?
         FileUtils.rm_r path, :force => true
@@ -84,13 +65,8 @@ class Asset
     @pathname.nil? ? false : true
   end
 
-  def sanitize(asset_name)
-    asset_name.gsub! /[^\w\.\-]/, '_'
-    return asset_name
-  end
-
   def children
-    @class_type == 'directory' ? @pathname.children.map { |c| Asset.find_by_pathname(c) }.compact : []
+    @class_type == 'directory' ? @pathname.children.map { |c| (Asset.find_by_pathname(c) unless c.basename.to_s =~ (/^\./) ) }.compact : []
   end
 
   def extension 
@@ -105,18 +81,13 @@ class Asset
   end  
 
   def embed_tag
-    asset_path = FileAsset.public_asset_path
+    path = id2path(@id)
+    asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))
     if image?
-      return "<img src='#{asset_path}/#{@asset_name}' />"
+      return "<img src='/#{asset_path}' />"
     else
-      return "<a href='#{asset_path}/#{@asset_name}'>#{@asset_name.capitalize}</a>"
+      return "<a href='/#{asset_path}'>#{@asset_name.capitalize}</a>"
     end
-  end
-
-  def self.public_asset_path
-    asset_parent_path = Pathname.new(FileBrowserExtension.asset_parent_path)
-    asset_root = Pathname.new(FileBrowserExtension.asset_path)
-    asset_root.relative_path_from(asset_parent_path)     
   end
 
   def description
@@ -124,16 +95,41 @@ class Asset
     return image? ? "Image" : "File"
   end
 
-  protected
+  class << self
 
-  def self.find_by_pathname(asset_path)
-    name = asset_path.basename.to_s
-    return nil if name =~ (/^\./)  
-    parent_id = path2id(asset_path.parent)
-    class_type = asset_path.ftype  
-    id = path2id(asset_path)  
-    Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => AssetLock.version, 'new_type' => class_type)
+   def find(*args)
+      case args.first
+        when :root then find_by_pathname(Pathname.new(absolute_path))
+        else find_from_id(args[0], args[1])
+      end
+    end
+
+    def find_from_id(id, version)
+      if AssetLock.confirm_lock(version) and !id.blank? 
+        asset_path = id2path(id)
+        find_by_pathname(asset_path, version)
+      else     
+        empty_asset = Asset.new('name' => '', 'pathname' => nil, 'new_type' => '')
+        id.blank? ? err_type = :blankid : err_type = :modified
+        empty_asset.errors.add(:base, Errors::CLIENT_ERRORS[err_type])      
+        empty_asset       
+      end    
+    end
+
+    def find_by_pathname(asset_path, version=AssetLock.lock_version)
+      name = asset_path.basename.to_s
+      raise Errors, :illegal_name if name =~ (/^\./) 
+      raise Errors, :illegal_path if asset_path.to_s.index(absolute_path) != 0 
+      parent_id = path2id(asset_path.parent)
+      class_type = asset_path.ftype  
+      id = path2id(asset_path)  
+      Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version, 'new_type' => class_type)
+    end
+
   end
+
+
+  protected
 
   def absolute_path
     FileBrowserExtension.asset_path
@@ -161,6 +157,11 @@ class Asset
       else
         errors.add(:base, :unknown)
     end
+  end
+
+  def sanitize(asset_name)
+    asset_name.gsub! /[^\w\.\-]/, '_'
+    asset_name
   end
 
   class Errors < StandardError
