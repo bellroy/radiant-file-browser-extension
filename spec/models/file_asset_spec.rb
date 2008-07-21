@@ -71,24 +71,21 @@ describe FileAsset do
   end
   
   describe 'embed tag' do
-    it 'should give img src if is an image' do
-      @file.stub!(:image?).and_return(true)
-      
-      @file.embed_tag.should =~ /<img src=/
+    it 'should give img src if its an image' do
+      @file.save
+      path = id2path(@id)
+      asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))      
+      @file.embed_tag.should == "<img src='/#{asset_path}' />"
     end
     
-    it 'should give a if not an image' do
-      @file.stub!(:image?).and_return(false)
-      
-      @file.embed_tag.should =~ /<a href=/
+    it 'should give hyperlink if its not an image' do
+      @file.save
+      @file.stub!(:asset_name).and_return('fname.doc')
+      path = id2path(@id)
+      asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))      
+      @file.embed_tag.should == "<img src='/#{asset_path}' />"
     end
     
-    it 'should point to file location in uri' do
-      @file.stub!(:image?).and_return(true)
-      FileAsset.stub!(:public_asset_path).and_return('assets')
-      
-      @file.embed_tag.should == "<img src='assets/#{@file.asset_name}' />"
-    end
   end
 
   describe "file name" do

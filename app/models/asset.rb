@@ -28,8 +28,9 @@ class Asset
 
   def update(asset)
     @asset_name = sanitize(asset['name'])
-    if valid?
-      begin
+    begin
+      raise Errors, :unknown unless self.exists?
+      if valid?
         raise Errors, :modified unless Asset.find(@id, @version).exists? 
         new_asset = Pathname.new(File.join(@pathname.parent, @asset_name))
         @pathname.rename(new_asset)
@@ -38,10 +39,10 @@ class Asset
         @version = AssetLock.new_lock_version
         @parent_id = get_parent_id(@id)
         return true
-      rescue Errors => e
-        add_error(e)
-        return false 
       end
+    rescue Errors => e
+        add_error(e)
+        return false     
     end
   end
 
@@ -155,7 +156,7 @@ class Asset
       when :illegal_name
         errors.add(:asset_name, Errors::CLIENT_ERRORS[e.message])
       else
-        errors.add(:base, :unknown)
+        errors.add(:base, Errors::CLIENT_ERRORS[:unknown])
     end
   end
 
