@@ -67,7 +67,7 @@ class Asset
   end
 
   def children
-    @class_type == 'directory' ? @pathname.children.map { |c| (Asset.find_by_pathname(c) unless c.basename.to_s =~ (/^\./) ) }.compact : []
+    @pathname.directory? ? @pathname.children.map { |c| (Asset.find_by_pathname(c) unless c.basename.to_s =~ (/^\./) ) }.compact : []
   end
 
   def extension 
