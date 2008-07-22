@@ -54,7 +54,7 @@ class Admin::FileController < ApplicationController
     if @file.exists?
       if request.post?
         if @file.update(params[:asset])
-          flash[:notice] = "#{@file.class_type.capitalize} has been successfully edited."  
+          flash[:notice] = "#{@file.description} name has been successfully edited."  
           redirect_to files_path
         else
           flash[:error] = @file.errors.full_messages.join(", ")

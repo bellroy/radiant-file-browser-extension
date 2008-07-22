@@ -1,5 +1,7 @@
 <% if @error_message.nil? -%>
-  <%= render_children(@assets, {:expanded => true, :level => @indent_level}) -%>
+  <% @assets.children.each do |child| -%>
+    <%= render_children(child, {:level => @indent_level}) -%>
+  <% end -%>
 <% else -%>
   <td colspan="6"><%= @error_message -%></td>
 <% end -%>

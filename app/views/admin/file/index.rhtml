@@ -13,7 +13,7 @@
   </thead>
   <tbody>
 <% if @assets -%>
-  <%= render_children(@assets, {:expanded => true}) -%>
+  <%= render_children(@assets) -%>
 <% else -%>
   <tr>
     <td colspan="6" class="note">No Files</td>
@@ -35,7 +35,7 @@ var asset_lock = '<%=@asset_lock-%>';
 SiteMap.addMethods ({
 	getBranch: function(row) {
 	
-	    var id = this.extractPageId(row), level = this.extractLevel(row),
+	    var id = this.extractPageId(row), level = ( this.extractLevel(row) + 1 ),
 	        spinner = $('busy-' + id);
 	
 		new Ajax.Updater(

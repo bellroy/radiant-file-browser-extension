@@ -6,25 +6,17 @@ class Asset
 
   validates_each :asset_name, :logic => lambda {
     expanded_full_path = File.expand_path(File.join(upload_location(@parent_id), @asset_name))  
+    class_type = self.class.to_s.gsub(/Asset/,'').downcase
     if @asset_name.blank?
       errors.add(:asset_name, Errors::CLIENT_ERRORS[:blankname])
     elsif (@asset_name.slice(0,1) == '.') || @asset_name.match(/\/|\\/)
       errors.add(:asset_name, Errors::CLIENT_ERRORS[:illegal_name])
     elsif expanded_full_path.index(absolute_path) != 0
       errors.add(:asset_name, Errors::CLIENT_ERRORS[:illegal_path])
-    elsif Pathname.new(expanded_full_path).send("#{@class_type}?") 
+    elsif Pathname.new(expanded_full_path).send("#{class_type}?") 
       errors.add(:asset_name, Errors::CLIENT_ERRORS[:exists])    
     end
   }
-
-  def initialize(asset)
-    @asset_name = sanitize(asset['name'])
-    @parent_id = asset['parent_id']
-    @version = asset['version']
-    @pathname = asset['pathname']
-    @id = asset['id']
-    @class_type = asset['new_type'].downcase
-  end
 
   def update(asset)
     @asset_name = sanitize(asset['name'])
@@ -66,36 +58,6 @@ class Asset
     @pathname.nil? ? false : true
   end
 
-  def children
-    @pathname.directory? ? @pathname.children.map { |c| (Asset.find_by_pathname(c) unless c.basename.to_s =~ (/^\./) ) }.compact : []
-  end
-
-  def extension 
-    ext = @pathname.extname
-    ext.slice(1, ext.length) if ext.slice(0,1) == '.'
-  end
-
-  def image?
-    ext = extension.downcase unless extension.nil?
-    return true if %w[png jpg jpeg bmp gif].include?(ext)
-    return false 
-  end  
-
-  def embed_tag
-    path = id2path(@id)
-    asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))
-    if image?
-      return "<img src='/#{asset_path}' />"
-    else
-      return "<a href='/#{asset_path}'>#{@asset_name.capitalize}</a>"
-    end
-  end
-
-  def description
-    return "Folder" if @class_type == 'directory'
-    return image? ? "Image" : "File"
-  end
-
   class << self
 
    def find(*args)
@@ -110,7 +72,7 @@ class Asset
         asset_path = id2path(id)
         find_by_pathname(asset_path, version)
       else     
-        empty_asset = Asset.new('name' => '', 'pathname' => nil, 'new_type' => '')
+        empty_asset = DirectoryAsset.new('name' => '', 'pathname' => nil, 'new_type' => '')
         id.blank? ? err_type = :blankid : err_type = :modified
         empty_asset.errors.add(:base, Errors::CLIENT_ERRORS[err_type])      
         empty_asset       
@@ -122,13 +84,15 @@ class Asset
       raise Errors, :illegal_name if name =~ (/^\./) 
       raise Errors, :illegal_path if asset_path.to_s.index(absolute_path) != 0 
       parent_id = path2id(asset_path.parent)
-      class_type = asset_path.ftype  
       id = path2id(asset_path)  
-      Asset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version, 'new_type' => class_type)
+      if asset_path.directory?
+        DirectoryAsset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version)
+      else
+        FileAsset.new('name' => name, 'parent_id' => parent_id, 'id' => id, 'pathname' => asset_path, 'version' => version)
+      end 
     end
 
   end
-
 
   protected
 

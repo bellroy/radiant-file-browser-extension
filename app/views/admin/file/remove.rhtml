@@ -7,7 +7,7 @@
 
 <table id="site-map" class="index" cellpadding="0" cellspacing="0" border="0">
   <tbody>
-      <%= render_children @asset, {:expanded => true, :show_parent => true, :simple => true} -%>
+      <%= render_children @asset, {:simple => true} -%>
   </tbody>
 </table>
 
@@ -18,13 +18,13 @@
 <script>
 	
 var auth_token = '<%=form_authenticity_token%>';
-var asset_lock = '<%=@asset_lock-%>';
+var asset_lock = '<%=@asset.version-%>';
 
 //over-riding the sitemap.js -> getBranch method	
 SiteMap.addMethods ({
 	getBranch: function(row) {
 	
-	    var id = this.extractPageId(row), level = this.extractLevel(row),
+	    var id = this.extractPageId(row), level = ( this.extractLevel(row) + 1 ),
 	        spinner = $('busy-' + id);
 
 		new Ajax.Updater(

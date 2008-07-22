@@ -4,7 +4,12 @@ class FileAsset < Asset
   def initialize(asset)
     @uploaded_data = asset['uploaded_data']
     filename = @uploaded_data.blank? ? '' : @uploaded_data.original_filename
-    super('name' => filename, 'parent_id' => asset['parent_id'], 'version' => asset['version'], 'new_type' => asset['new_type'])
+    @pathname = asset['pathname']
+    @id = asset['id']
+    filename = asset['name'] if self.exists?
+    @asset_name = sanitize(filename)
+    @parent_id = asset['parent_id']
+    @version = asset['version']
   end
 
   def save
@@ -23,6 +28,35 @@ class FileAsset < Asset
       end
     end
     @id
+  end
+
+  def extension 
+    ext = @pathname.extname
+    ext.slice(1, ext.length) if ext.slice(0,1) == '.'
+  end
+
+  def image?
+    ext = extension.downcase unless extension.nil?
+    return true if %w[png jpg jpeg bmp gif].include?(ext)
+    return false 
+  end  
+
+  def embed_tag
+    path = id2path(@id)
+    asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))
+    if image?
+      return "<img src='/#{asset_path}' />"
+    else
+      return "<a href='/#{asset_path}'>#{@asset_name.capitalize}</a>"
+    end
+  end
+
+  def description
+    image? ? "Image" : "File"
+  end
+
+  def html_class
+    "no-children"
   end
 
 end

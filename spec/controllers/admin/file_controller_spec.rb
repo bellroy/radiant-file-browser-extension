@@ -169,13 +169,13 @@ describe Admin::FileController do
 
     it "should rename the directory" do
       rename_asset(@test_dir, @renamed_test_dir)
-      flash[:notice].to_s.should == "Directory has been successfully edited." 
+      flash[:notice].to_s.should == "Folder name has been successfully edited." 
       response.should redirect_to(files_path) 
     end
 
     it "should rename the file" do
       rename_asset(@test_upload_file, @renamed_test_upload_file)
-      flash[:notice].to_s.should == "File has been successfully edited." 
+      flash[:notice].to_s.should == "Image name has been successfully edited." 
       response.should redirect_to(files_path)
     end
 

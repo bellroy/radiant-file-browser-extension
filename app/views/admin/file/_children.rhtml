@@ -1,24 +1,22 @@
-<% if show_parent -%>
-  <tr class="node level-<%= level -%><%=html_class-%>" id = "page-<%= asset.id -%>" >   
-    <td class="<%= asset.class_type -%>" style="padding-left: <%= padding_left(level)-%>px">
-      <span class="w1">
-        <%= expander(expanded) -%>
-        <%= icon_for(asset.class_type) -%>
-        <span class="title"><a href='/admin/files/edit?id=<%= asset.id -%>&v=<%= asset_lock -%>'><%= asset.pathname.basename.to_s -%></a></span>
-        <%= spinner(asset.id) -%>
-      </span>
-    </td>
-    <td class="type"><%= asset.description -%></td>   
-    <% if !simple -%>
-      <td class="size"><%= "#{asset.pathname.size} Bytes" if asset.class_type == 'file' -%></td>
-      <td class="embed"><%= link_or_embed_field_for(asset) if asset.class_type == 'file' -%></td>
-      <td class="add-child"><%= link_to_new_file(asset.id, asset_lock) if asset.class_type == 'directory' -%></td>
-      <td class="remove"><%= link_to_remove_file(asset.id, asset_lock) -%></td> 
-    <% end %>
-  </tr> 
-<% end -%>
-<% if expanded -%>
+<tr class="level-<%= level -%> <%= asset.html_class -%> node" id = "page-<%= asset.id -%>" >   
+  <td style="padding-left: <%= padding_left(level)-%>px;">
+    <span class="w1">
+      <%= expander(expanded) unless simple -%>
+      <%= icon_for -%>
+      <span class="title"><a href='/admin/files/edit?id=<%= asset.id -%>&v=<%= asset_lock -%>'><%= asset.pathname.basename.to_s -%></a></span>
+      <%= spinner -%>
+    </span>
+  </td>
+  <td class="type"><%= asset.description -%></td>   
+  <% if !simple -%>
+    <td class="size"><%= asset_size -%></td>
+    <td class="embed"><%= link_or_embed_field_for -%></td>
+    <td class="add-child"><%= link_to_new_file(asset_lock) -%></td>
+    <td class="remove"><%= link_to_remove_file(asset_lock) -%></td> 
+  <% end %>
+</tr> 
+<% if expanded1 and asset.is_a?(DirectoryAsset) -%>
   <% asset.children.each do |child| -%>
-    <%= render_children child, :level => level + 1, :expanded => false, :show_parent => true, :simple => simple -%>
+    <%= render_children child, :level => level + 1, :simple => simple -%>
   <% end -%>
 <% end -%>
