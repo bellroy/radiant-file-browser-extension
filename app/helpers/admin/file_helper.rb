@@ -31,7 +31,7 @@ module Admin::FileHelper
      }
   end    
         
-  def expander(expanded)
+  def expander
     return nil if (@current_asset.is_a?(FileAsset) or @current_asset.children.empty?)
     image(expanded1 ? "collapse" : "expand", 
           :class => "expander", :alt => 'toggle children', 
