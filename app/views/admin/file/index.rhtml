@@ -22,10 +22,6 @@
   </tbody>
 </table>
 
-<p>
-  <%= link_to 'New Asset', new_file_path %>
-</p>
-
 <script>
 	
 var auth_token = '<%=form_authenticity_token-%>';
@@ -33,6 +29,10 @@ var asset_lock = '<%=@asset_lock-%>';
 	
 //over-riding the sitemap.js -> getBranch method	
 SiteMap.addMethods ({
+        saveExpandedCookie: function() {
+           document.cookie = "expanded_rows=" + encodeURIComponent(this.expandedRows.uniq().join(",")) + "; path=/admin; ";
+           document.cookie = "version=" + asset_lock + "; path=/admin; "; 
+        },
 	getBranch: function(row) {
 	
 	    var id = this.extractPageId(row), level = ( this.extractLevel(row) + 1 ),

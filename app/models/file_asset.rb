@@ -30,6 +30,18 @@ class FileAsset < Asset
     @id
   end
 
+  def destroy
+      path = id2path(@id)
+      raise Errors, :illegal_path if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) 
+      raise Errors, :modified unless Asset.find(@id, @version).exists? 
+      path.delete
+      AssetLock.new_lock_version         
+      return true
+    rescue Errors => e 
+      add_error(e)
+      return false
+  end
+
   def extension 
     ext = @pathname.extname
     ext.slice(1, ext.length) if ext.slice(0,1) == '.'
@@ -42,21 +54,27 @@ class FileAsset < Asset
   end  
 
   def embed_tag
-    path = id2path(@id)
+    path = id2path(@id)    
     asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))
     if image?
-      return "<img src='/#{asset_path}' />"
+      file_content = @pathname.read
+      img = ImageSize.new(file_content, extension)    
+      return "<img src='/#{asset_path}' width='#{img.get_width}px' height='#{img.get_height}px' />"
     else
       return "<a href='/#{asset_path}'>#{@asset_name.capitalize}</a>"
     end
   end
 
-  def description
+  def description    
     image? ? "Image" : "File"
   end
 
   def html_class
     "no-children"
+  end
+
+  def icon
+    "admin/page.png"    
   end
 
 end

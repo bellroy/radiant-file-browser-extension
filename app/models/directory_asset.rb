@@ -25,6 +25,18 @@ class DirectoryAsset < Asset
     @id
   end
 
+  def destroy
+      path = id2path(@id)
+      raise Errors, :illegal_path if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) 
+      raise Errors, :modified unless Asset.find(@id, @version).exists? 
+      FileUtils.rm_r path, :force => true
+      AssetLock.new_lock_version         
+      return true
+    rescue Errors => e 
+      add_error(e)
+      return false
+  end
+
   def description
     "Folder" 
   end
@@ -39,6 +51,10 @@ class DirectoryAsset < Asset
 
   def root?
     @pathname.to_s == absolute_path
+  end
+
+  def icon
+    "admin/directory.gif"
   end
 
 end

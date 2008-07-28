@@ -90,20 +90,20 @@ describe Asset do
 
     it "should edit the name of a directory" do
       asset = Asset.find(@dir.id, current_version)
-      asset.update('name' => @renamed_test_dir, 'version' => current_version)
+      asset.rename('name' => @renamed_test_dir, 'version' => current_version)
       asset.pathname.should == Pathname.new(absolute_path(@renamed_test_dir))  
     end
 
     it "should edit the name of a file" do
       asset = Asset.find(@file.id, current_version)
-      asset.update('name' => @renamed_test_upload_file, 'version' => current_version)
+      asset.rename('name' => @renamed_test_upload_file, 'version' => current_version)
       asset.pathname.should == Pathname.new(absolute_path(@renamed_test_upload_file))  
     end
 
     it "should not edit the name of a directory if directory name already exists and provide an asset error with error no. 1" do
       DirectoryAsset.new('name' => @second_test_dir, 'parent_id' => nil, 'version' => current_version, 'new_type' => 'Directory').save
       asset = Asset.find(@dir.id, current_version)
-      asset.update('name' => @second_test_dir, 'version' => current_version)
+      asset.rename('name' => @second_test_dir, 'version' => current_version)
       asset.pathname.should == Pathname.new(absolute_path(@test_dir))
       Pathname.new(absolute_path(@test_dir)).directory?.should == true
       asset.errors.full_messages.should == [error_message(:exists)]
@@ -112,7 +112,7 @@ describe Asset do
     it "should not edit the name of a file if file name already exists and provide an asset error with error no. 1" do
       FileAsset.new('uploaded_data' => fixture_file_upload(@second_test_upload_file, "image/jpg"), 'parent_id' => nil, 'version' => current_version, 'new_type' => 'File').save
       asset = Asset.find(@file.id, current_version)
-      asset.update('name' => @second_test_upload_file, 'version' => current_version)
+      asset.rename('name' => @second_test_upload_file, 'version' => current_version)
       asset.pathname.should == Pathname.new(absolute_path(@test_upload_file))
       Pathname.new(absolute_path(@test_upload_file)).file?.should == true
       asset.errors.full_messages.should == [error_message(:exists)]
@@ -120,7 +120,7 @@ describe Asset do
 
     it "should not edit directory if directory name consists of a leading period" do
         asset = Asset.find(@dir.id, current_version)
-        asset.update('name' => '.testfile', 'version' => current_version)
+        asset.rename('name' => '.testfile', 'version' => current_version)
         asset.pathname.should == Pathname.new(absolute_path(@test_dir))
         Pathname.new(absolute_path(@test_dir)).directory?.should == true
         asset.errors.full_messages.should == [error_message(:illegal_name)]
@@ -135,14 +135,14 @@ describe Asset do
     fixture.each do |consists, name, sanitized|
       it "should sanitize directory name if it contains special characters" do
         asset = Asset.find(@dir.id, current_version)
-        asset.update('name' => name, 'version' => current_version)
+        asset.rename('name' => name, 'version' => current_version)
         asset.pathname.should == Pathname.new(absolute_path(sanitized))
         Pathname.new(absolute_path(sanitized)).directory?.should == true
       end
 
       it "should sanitize file name if it contains special characters" do
        asset = Asset.find(@file.id, current_version)
-       asset.update('name' => name, 'version' => current_version)
+       asset.rename('name' => name, 'version' => current_version)
        asset.pathname.should == Pathname.new(absolute_path(sanitized))
        Pathname.new(absolute_path(sanitized)).file?.should == true
       end
@@ -150,14 +150,14 @@ describe Asset do
 
     it "should not edit a directory if version mismatch occurs and provide an asset error with error no. 0" do
       asset = Asset.find(@dir.id, (current_version + 1))
-      asset.update('name' => @second_test_dir)
+      asset.rename('name' => @second_test_dir)
       Pathname.new(absolute_path(@test_dir)).directory?.should == true
       asset.errors.full_messages.should include(error_message(:unknown))
     end
 
     it "should not edit a file if version mismatch occurs and provide an asset error with error no. 0" do
       asset = Asset.find(@file.id, (current_version + 1))
-      asset.update('name' => @second_test_upload_file)
+      asset.rename('name' => @second_test_upload_file)
       Pathname.new(absolute_path(@test_upload_file)).file?.should == true
       asset.errors.full_messages.should include(error_message(:unknown))
     end

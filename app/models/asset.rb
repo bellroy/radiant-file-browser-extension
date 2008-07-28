@@ -18,7 +18,7 @@ class Asset
     end
   }
 
-  def update(asset)
+  def rename(asset)
     @asset_name = sanitize(asset['name'])
     begin
       raise Errors, :unknown unless self.exists?
@@ -36,22 +36,6 @@ class Asset
         add_error(e)
         return false     
     end
-  end
-
-  def destroy
-      path = id2path(@id)
-      raise Errors, :illegal_path if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) 
-      raise Errors, :modified unless Asset.find(@id, @version).exists? 
-      if path.directory?
-        FileUtils.rm_r path, :force => true
-      elsif path.file?
-        path.delete
-      end
-      AssetLock.new_lock_version         
-      return true
-    rescue Errors => e 
-      add_error(e)
-      return false
   end
 
   def exists?

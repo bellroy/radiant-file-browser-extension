@@ -3,7 +3,7 @@
     <span class="w1">
       <%= expander unless simple -%>
       <%= icon_for -%>
-      <span class="title"><a href='/admin/files/edit?id=<%= asset.id -%>&v=<%= asset_lock -%>'><%= asset.pathname.basename.to_s -%></a></span>
+      <span class="title"><%= link_to_rename_file(asset_lock) -%></span>
       <%= spinner -%>
     </span>
   </td>

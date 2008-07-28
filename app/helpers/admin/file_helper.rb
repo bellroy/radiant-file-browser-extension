@@ -7,14 +7,25 @@ module Admin::FileHelper
     locals.reverse_merge!(:level => 0, :simple => false, :asset_lock => AssetLock.lock_version).merge!(:asset => asset)
     render :partial => 'children', :locals =>  locals
   end   
-              
+          
+  def expanded_rows1
+    unless @expanded_rows
+      @expanded_rows = case
+      when (rows = cookies[:expanded_rows] and version = cookies[:version])         
+        AssetLock.confirm_lock(version) ? rows.split(',').map { |x| Integer(x) rescue nil }.compact : []
+      else
+        []
+      end
+    end
+    @expanded_rows
+  end
+    
   def expanded1
-    show_all? || (@current_asset.is_a?(DirectoryAsset) and @current_asset.root?)
+    show_all? || (@current_asset.root? if @current_asset.respond_to?(:root?)) || expanded_rows1.include?(@current_asset.id)
   end
 
   def icon_for
-    @current_asset.class == DirectoryAsset ? image_name = "page.png" : image_name = "snippet.png"
-    image_tag "admin/#{image_name}", :alt => '', :class => 'icon'
+    image_tag @current_asset.icon, :alt => '', :class => 'icon'
   end
 
   def asset_size
@@ -50,7 +61,11 @@ module Admin::FileHelper
   end
   
   def link_to_remove_file(asset_lock)
-    link_to image('remove', :alt => 'remove page'), '/admin/files/remove?id=' + @current_asset.id.to_s + '&v=' + asset_lock.to_s unless (@current_asset.is_a?(DirectoryAsset) and @current_asset.root?)
+    link_to image('remove', :alt => 'remove page'), '/admin/files/remove?id=' + @current_asset.id.to_s + '&v=' + asset_lock.to_s unless (@current_asset.respond_to?(:root?) and @current_asset.root?)
+  end
+
+  def link_to_rename_file(asset_lock)
+     (@current_asset.respond_to?(:root?) and @current_asset.root?) ? @current_asset.pathname.basename : "<a href='/admin/files/edit?id=#{@current_asset.id}&v=#{asset_lock}'>#{@current_asset.pathname.basename}</a>"
   end
   
 end

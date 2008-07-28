@@ -75,7 +75,7 @@ describe FileAsset do
       @file.save
       path = id2path(@id)
       asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))      
-      @file.embed_tag.should == "<img src='/#{asset_path}' />"
+      @file.embed_tag.should == "<img src='/#{asset_path}' width='521px' height='369px' />"
     end
     
     it 'should give hyperlink if its not an image' do
@@ -83,7 +83,7 @@ describe FileAsset do
       @file.stub!(:asset_name).and_return('fname.doc')
       path = id2path(@id)
       asset_path = path.relative_path_from(Pathname.new(FileBrowserExtension.asset_parent_path))      
-      @file.embed_tag.should == "<img src='/#{asset_path}' />"
+      @file.embed_tag.should == "<img src='/#{asset_path}' width='521px' height='369px' />"
     end
     
   end
