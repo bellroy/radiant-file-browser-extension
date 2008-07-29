@@ -27,7 +27,7 @@
 var auth_token = '<%=form_authenticity_token-%>';
 var asset_lock = '<%=@asset_lock-%>';
 	
-//over-riding the sitemap.js -> getBranch method	
+//over-riding the sitemap.js -> getBranch and saveExpandedCookie methods
 SiteMap.addMethods ({
         saveExpandedCookie: function() {
            document.cookie = "expanded_rows=" + encodeURIComponent(this.expandedRows.uniq().join(",")) + "; path=/admin; ";

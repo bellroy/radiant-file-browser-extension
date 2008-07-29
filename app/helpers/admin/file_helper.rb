@@ -8,7 +8,7 @@ module Admin::FileHelper
     render :partial => 'children', :locals =>  locals
   end   
           
-  def expanded_rows1
+  def expanded_rows_with_asset_lock
     unless @expanded_rows
       @expanded_rows = case
       when (rows = cookies[:expanded_rows] and version = cookies[:version])         
@@ -20,8 +20,8 @@ module Admin::FileHelper
     @expanded_rows
   end
     
-  def expanded1
-    show_all? || (@current_asset.root? if @current_asset.respond_to?(:root?)) || expanded_rows1.include?(@current_asset.id)
+  def expanded?
+    show_all? || (@current_asset.root? if @current_asset.respond_to?(:root?)) || expanded_rows_with_asset_lock.include?(@current_asset.id)
   end
 
   def icon_for
@@ -44,7 +44,7 @@ module Admin::FileHelper
         
   def expander
     return nil if (@current_asset.is_a?(FileAsset) or @current_asset.children.empty?)
-    image(expanded1 ? "collapse" : "expand", 
+    image(expanded? ? "collapse" : "expand", 
           :class => "expander", :alt => 'toggle children', 
           :title => '')     
   end    
