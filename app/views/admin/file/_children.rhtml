@@ -15,7 +15,7 @@
     <td class="remove"><%= link_to_remove_file(asset_lock) -%></td> 
   <% end %>
 </tr> 
-<% if expanded1 and asset.is_a?(DirectoryAsset) -%>
+<% if expanded? and asset.is_a?(DirectoryAsset) -%>
   <% asset.children.each do |child| -%>
     <%= render_children child, :level => level + 1, :simple => simple -%>
   <% end -%>
