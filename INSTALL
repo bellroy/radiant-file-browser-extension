@@ -9,6 +9,11 @@
    (from root of application)
    % rake radiant:extensions:file_browser:migrate RAILS_ENV="production"
 
-4. Restart web server
+4. Run the extension update task.
+ 
+   (from root of application)
+   % rake radiant:extensions:file_browser:update
+
+5. Restart web server
 
 If installed correctly, "File Browser" will be listed on extensions listing (http://locahost:3000/admin/extensions)
