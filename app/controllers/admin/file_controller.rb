@@ -1,6 +1,5 @@
 class Admin::FileController < ApplicationController
   include DirectoryArray
-  verify :method => :post, :only => :children, :render => {:text => '405 HTTP POST required', :status => 405}, :add_headers => {'Allow' => 'POST'} 
   
   def index
     @assets = Asset.find(:root)

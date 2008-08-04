@@ -14,7 +14,8 @@ class FileBrowserExtension < Radiant::Extension
     map.with_options(:controller => 'admin/file') do |admin|
       admin.files        'admin/files',              :action => 'index'
       admin.new_file     'admin/files/new',          :action => 'new'
-      admin.child_files  'admin/files/children',     :action => 'children'
+      admin.child_files  'admin/files/children',     :action => 'children',
+                                                     :conditions => {:method => :post}
       admin.edit_files   'admin/files/edit',         :action => 'edit'
       admin.remove_file  'admin/files/remove',       :action => 'remove'      
     end
