@@ -2,8 +2,7 @@ class Admin::FileController < ApplicationController
   include DirectoryArray
   
   def index
-    @assets = Asset.find(:root)
-    @asset_lock = AssetLock.lock_version
+    @root_asset = Asset.root
   end
   
   def new
@@ -33,6 +32,9 @@ class Admin::FileController < ApplicationController
   
   def remove
     @asset = Asset.find(params[:id], params[:v])
+    # TODO: Refactor @asset.pathname.nil? to make @asset invalid, so
+    #       the following line would read unless @asset.valid?
+    #       this would also clean up a lot of the specs (one would remove the reader for pathname)
     unless @asset.pathname.nil?
       if request.post?      
         if @asset.destroy

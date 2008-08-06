@@ -38,3 +38,26 @@ Spec::Runner.configure do |config|
   # If you declare global fixtures, be aware that they will be declared
   # for all of your examples, even those that don't use them.
 end
+
+  
+def time_taken_to
+  t = Time.now
+  yield
+  Time.now - t
+end
+
+def create_lots_of_files
+  10.times do |i|
+    Dir.mkdir(File.join(FileBrowserExtension.asset_path,i.to_s))
+    10.times do |j|
+      Dir.mkdir(File.join(FileBrowserExtension.asset_path, i.to_s, j.to_s))
+      10.times do |k|
+        FileUtils.touch(File.join(FileBrowserExtension.asset_path, i.to_s, j.to_s, k.to_s))
+      end
+    end
+  end
+end
+
+def delete_those_lots_of_files
+  10.times {|i| FileUtils.rm_rf(File.join(FileBrowserExtension.asset_path,i.to_s))}
+end

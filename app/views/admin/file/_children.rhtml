@@ -1,21 +1,21 @@
 <tr class="level-<%= level -%> <%= asset.html_class -%> node" id = "page-<%= asset.id -%>" >   
   <td style="padding-left: <%= padding_left(level)-%>px;">
     <span class="w1">
-      <%= expander unless simple -%>
-      <%= icon_for -%>
-      <span class="title"><%= link_to_rename_file(asset_lock) -%></span>
-      <%= spinner -%>
+      <%= expander_for(asset) unless simple -%>
+      <%= icon_for(asset) -%>
+      <span class="title"><%= link_to_rename_file(asset) -%></span>
+      <%= spinner_for(asset) -%>
     </span>
   </td>
   <td class="type"><%= asset.description -%></td>   
   <% if !simple -%>
-    <td class="size"><%= asset_size -%></td>
-    <td class="embed"><%= link_or_embed_field_for -%></td>
-    <td class="add-child"><%= link_to_new_file(asset_lock) -%></td>
-    <td class="remove"><%= link_to_remove_file(asset_lock) -%></td> 
+    <td class="size"><%= number_to_human_size(asset.size) -%></td>
+    <td class="embed"><%= link_or_embed_field_for(asset) -%></td>
+    <td class="add-child"><%= link_to_new_file(asset) -%></td>
+    <td class="remove"><%= link_to_remove_file(asset) -%></td> 
   <% end %>
 </tr> 
-<% if expanded? and asset.is_a?(DirectoryAsset) -%>
+<% if expanded?(asset) and asset.is_a?(DirectoryAsset) -%>
   <% asset.children.each do |child| -%>
     <%= render_children child, :level => level + 1, :simple => simple -%>
   <% end -%>
