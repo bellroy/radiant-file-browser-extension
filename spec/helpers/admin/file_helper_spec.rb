@@ -4,7 +4,7 @@ describe Admin::FileHelper do
   scenario :users  
   
   before do
-
+    create_dir('Test', nil)
   end
 
   before :each do

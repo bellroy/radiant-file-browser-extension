@@ -38,3 +38,22 @@ Spec::Runner.configure do |config|
   # If you declare global fixtures, be aware that they will be declared
   # for all of your examples, even those that don't use them.
 end
+
+######################
+# Methods frequently used in the specs
+######################
+def create_dir(dirname, parent_id, version=current_version)
+  post :new, :asset => {:name => dirname, :parent_id => parent_id, :new_type => 'Directory', :version => version}, :v => version
+end
+
+def create_file(filename, parent_id=nil)
+  post :new, :asset => {:uploaded_data => fixture_file_upload(filename, "image/jpg"), :parent_id => parent_id, :new_type => 'File', :version => current_version}, :v => current_version
+end
+
+def error_message(err_type)
+  [:modified, :unknown, :blankid].include?(err_type) ? Asset::Errors::CLIENT_ERRORS[err_type] : "Asset name " + Asset::Errors::CLIENT_ERRORS[err_type]
+end
+
+def current_version
+  AssetLock.lock_version
+end

@@ -1,13 +1,5 @@
 require File.dirname(__FILE__) + '/../spec_helper'
 
-def current_version
-  AssetLock.lock_version
-end
-
-def error_message(err_type)
-  [:modified, :unknown, :blankid].include?(err_type) ? Asset::Errors::CLIENT_ERRORS[err_type] : "Asset name " + Asset::Errors::CLIENT_ERRORS[err_type]
-end
-
 describe Asset do
 
   before do

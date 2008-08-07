@@ -9,22 +9,6 @@ def full_path(dirname)
   File.join(get_absolute_root_path, dirname)
 end
 
-def current_version
-  AssetLock.lock_version
-end
-
-def error_message(err_type)
-  [:modified, :unknown, :blankid].include?(err_type) ? Asset::Errors::CLIENT_ERRORS[err_type] : "Asset name " + Asset::Errors::CLIENT_ERRORS[err_type]
-end
-
-def create_dir(dirname, parent_id, version=current_version)
-  post :new, :asset => {:name => dirname, :parent_id => parent_id, :new_type => 'Directory', :version => version}, :v => version
-end
-
-def create_file(filename, parent_id=nil)
-  post :new, :asset => {:uploaded_data => fixture_file_upload(filename, "image/jpg"), :parent_id => parent_id, :new_type => 'File', :version => current_version}, :v => current_version
-end
-
 def rename_asset(oldname, newname, version=current_version)
   post :edit, :id => path2id(full_path(oldname)), :asset => {:name => newname}, :v => version
 end
@@ -338,6 +322,15 @@ describe Admin::FileController do
       response.body.should_not have_text('<head>')
       response.content_type.should == 'text/html'
       response.charset.should == 'utf-8'
+    end
+
+    it "should allow only post method for children" do
+      [:get, :put, :delete].each do |http_method|
+      send http_method, :children
+      response.headers['Status'].should =~ /405/
+      response.headers['Allow'].should == 'POST'
+      response.body.should == '405 HTTP POST required'
+      end
     end
 
   end
