@@ -1,6 +1,11 @@
 module DirectoryArray
+  attr_accessor  :directory_hash, :lock_version
 
   def get_directory_array(path)
+    path_str = path.to_s
+    @directory_hash = {} if @directory_hash.nil?
+    @lock_version = AssetLock.lock_version if @lock_version.nil?
+    return @directory_hash[path_str] if ( @directory_hash.has_key?(path_str) and AssetLock.confirm_lock(@lock_version))
     asset_array = []
     asset_absolute_path = Pathname.new(FileBrowserExtension.asset_path.to_s)
     path.children.collect do |child|
@@ -13,8 +18,15 @@ module DirectoryArray
         end  
       end
     end
-    return asset_array.flatten
+    asset_array.flatten!
+    @directory_hash[path_str] = asset_array
+    @lock_version = AssetLock.lock_version
+    return asset_array
   end   
+
+  def reset_directory_hash
+    @directory_hash = {} 
+  end
 
   def hidden?(path)
     path.realpath.basename.to_s =~ (/^\./)

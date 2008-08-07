@@ -26,6 +26,7 @@ class Asset
         raise Errors, :modified unless Asset.find(@id, @version).exists? 
         new_asset = Pathname.new(File.join(@pathname.parent, @asset_name))
         @pathname.rename(new_asset)
+        reset_directory_hash
         @pathname = Pathname.new(new_asset)
         @id = path2id(new_asset)
         @version = AssetLock.new_lock_version

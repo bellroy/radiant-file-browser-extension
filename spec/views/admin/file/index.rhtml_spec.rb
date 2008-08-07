@@ -2,10 +2,15 @@ require File.dirname(__FILE__) + '/../../../spec_helper'
 
 describe "/admin/file/index.rhtml" do
   before(:each) do
+    FileUtils.mkdir_p(FileBrowserExtension.asset_path)
     assigns[:root_asset] = Asset.root
     template.stub! :form_authenticity_token
   end
   
+  after do
+    FileUtils.rm_r(FileBrowserExtension.asset_path)
+  end
+
   def render_index
     render "/admin/file/index.rhtml"
   end

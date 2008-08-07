@@ -20,6 +20,7 @@ class FileAsset < Asset
         new_file = Pathname.new(File.join(upload_location, @asset_name))
         raise Errors, :modified unless AssetLock.confirm_lock(@version)
         File.open(new_file, 'wb') { |f| f.write(@uploaded_data.read) }
+        reset_directory_hash
         @id = path2id(new_file)
         @pathname = new_file
         @version = AssetLock.new_lock_version
@@ -35,6 +36,7 @@ class FileAsset < Asset
       raise Errors, :illegal_path if (path.to_s == absolute_path or path.to_s.index(absolute_path) != 0) 
       raise Errors, :modified unless Asset.find(@id, @version).exists? 
       path.delete
+      reset_directory_hash
       AssetLock.new_lock_version         
       return true
     rescue Errors => e 
