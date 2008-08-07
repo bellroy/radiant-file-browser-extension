@@ -24,6 +24,10 @@ class DirectoryAsset < Asset
     end
     @id
   end
+  
+  def size
+    # Don't report size for directories, it would return bogus size info (the 'directory file' on disk)
+  end
 
   def destroy
       path = id2path(@id)

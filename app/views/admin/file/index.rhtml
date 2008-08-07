@@ -12,8 +12,8 @@
     </tr>
   </thead>
   <tbody>
-<% if @assets -%>
-  <%= render_children(@assets) -%>
+<% if @root_asset -%>
+  <%= render_children @root_asset -%>
 <% else -%>
   <tr>
     <td colspan="6" class="note">No Files</td>
@@ -25,7 +25,7 @@
 <script>
 	
 var auth_token = '<%=form_authenticity_token-%>';
-var asset_lock = '<%=@asset_lock-%>';
+var asset_lock = '<%=@root_asset.lock-%>';
 	
 //over-riding the sitemap.js -> getBranch and saveExpandedCookie methods
 SiteMap.addMethods ({

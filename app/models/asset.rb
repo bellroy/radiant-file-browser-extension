@@ -37,18 +37,36 @@ class Asset
         return false     
     end
   end
+  
+  def size
+    @pathname.size
+  end
+  
+  def basename
+    @pathname.basename
+  end
 
   def exists?
     @pathname.nil? ? false : true
   end
 
+  def lock
+    # TODO: Abstract away all lock versiony stuff.
+    # asset.version should probably be the only public interface
+    AssetLock.lock_version
+  end
+
   class << self
 
-   def find(*args)
+    def find(*args)
       case args.first
-        when :root then find_by_pathname(Pathname.new(absolute_path))
+        when :root then root
         else find_from_id(args[0], args[1])
       end
+    end
+    
+    def root
+      find_by_pathname(Pathname.new(absolute_path))
     end
 
     def find_from_id(id, version)

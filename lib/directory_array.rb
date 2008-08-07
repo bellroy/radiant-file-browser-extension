@@ -1,7 +1,7 @@
 module DirectoryArray
 
   def get_directory_array(path)
-    asset_array = Array.new
+    asset_array = []
     asset_absolute_path = Pathname.new(FileBrowserExtension.asset_path.to_s)
     path.children.collect do |child|
       unless hidden?(child)

@@ -301,9 +301,26 @@ describe Admin::FileController do
     end
 
   end
+  
+  describe 'list' do
+    MAX_EMPTY_TIME = 0.05
+    it "should take < #{MAX_EMPTY_TIME} seconds to run on empty asset directory" do
+      time_taken_to{ get(:index) }.should <= MAX_EMPTY_TIME
+    end
+    # all this is doing is calling Asset.root , that should be fast
+    MAX_FULL_TIME = 0.1
+    it "should take < #{MAX_FULL_TIME} seconds to run on empty populated directory" do
+      begin
+        create_lots_of_files
+        time_taken_to{ get(:index) }.should <= MAX_FULL_TIME
+      ensure
+        delete_those_lots_of_files
+      end
+    end
+  end
 
   #####
-  #Both the below specs needs to be corrected
+  #TODO: Both the below specs needs to be corrected
   describe "managing AJAX request" do
 
     it "should render children via AJAX" do
