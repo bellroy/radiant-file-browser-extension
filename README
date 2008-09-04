@@ -1,5 +1,7 @@
 = File Browser
 
-Simple Extension to list the contents of a server-side directory inside Radiant and upload files to it.
+Simple Extension to list the contents of a server-side directory inside Radiant and upload files to it. Enabling a folder to be accessed by multiple methods (http, webdav, ssh etc.) that can also be modified via the web.
+
+If you don't require multiple method access, consider using paperclipped (http://github.com/kbingman/paperclipped)
 
 For installation instructions see INSTALL
